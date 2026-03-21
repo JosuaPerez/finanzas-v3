@@ -28,15 +28,14 @@ const showingNavigationDropdown = ref(false);
                             <!-- Navigation Links -->
                             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                        🛡️ Presupuesto
+                                    <NavLink :href="route('dashboard')" :active="route().current('dashboard')">🛡️
+                                        Presupuesto</NavLink>
+                                    <NavLink :href="route('deudas')" :active="route().current('deudas')">🔥 Deudas
                                     </NavLink>
-                                    <NavLink :href="route('deudas')" :active="route().current('deudas')">
-                                        🔥 Deudas
+                                    <NavLink :href="route('metas')" :active="route().current('metas')">🎯 Metas
                                     </NavLink>
-                                    <NavLink :href="route('metas')" :active="route().current('metas')">
-                                        🎯 Metas
-                                    </NavLink>
+                                    <NavLink :href="route('historial')" :active="route().current('historial')">🗂️
+                                        Historial</NavLink>
                                 </div>
                             </div>
                         </div>
@@ -105,14 +104,15 @@ const showingNavigationDropdown = ref(false);
                     hidden: !showingNavigationDropdown,
                 }" class="sm:hidden">
                     <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            🛡️ Presupuesto
+                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">🛡️
+                            Presupuesto
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink :href="route('deudas')" :active="route().current('deudas')">
-                            🔥 Deudas
+                        <ResponsiveNavLink :href="route('deudas')" :active="route().current('deudas')">🔥 Deudas
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink :href="route('metas')" :active="route().current('metas')">
-                            🎯 Metas
+                        <ResponsiveNavLink :href="route('metas')" :active="route().current('metas')">🎯 Metas
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('historial')" :active="route().current('historial')">🗂️
+                            Historial
                         </ResponsiveNavLink>
                     </div>
 

@@ -1,22 +1,14 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\DebtController;
+use App\Http\Controllers\ProfileController;
 use App\Models\Budget;
 use App\Models\Debt;
-use App\Http\Controllers\DebtController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::redirect('/', '/login');
 
 Route::get('/dashboard', function () {
     // Buscamos los presupuestos del usuario actual, ordenados del más reciente al más viejo
@@ -24,14 +16,29 @@ Route::get('/dashboard', function () {
 
     // Se los enviamos a la vista 'Dashboard'
     return Inertia::render('Dashboard', [
-        'budgets' => $misPresupuestos
+        'budgets' => $misPresupuestos,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/deudas', function () {
-    // Buscamos las deudas del usuario
+    // 1. Buscamos las deudas
     $misDeudas = Debt::where('user_id', auth()->id())->get();
-    return Inertia::render('Deudas', ['debts' => $misDeudas]);
+
+    // 2. Buscamos el último presupuesto guardado para extraer las municiones
+    $ultimoPresupuesto = Budget::where('user_id', auth()->id())->latest()->first();
+    $capitalLibre = 0;
+
+    if ($ultimoPresupuesto) {
+        // Como guardamos los detalles en JSON, lo decodificamos
+        $details = is_string($ultimoPresupuesto->details) ? json_decode($ultimoPresupuesto->details, true) : $ultimoPresupuesto->details;
+        $capitalLibre = $details['remaining'] ?? 0;
+    }
+
+    // 3. Enviamos todo a Vue
+    return Inertia::render('Deudas', [
+        'debts' => $misDeudas,
+        'ammunition' => $capitalLibre, // <-- Aquí van las municiones
+    ]);
 })->middleware(['auth', 'verified'])->name('deudas');
 
 // Ruta para guardar nueva deuda
@@ -44,6 +51,12 @@ Route::get('/metas', function () {
 })->middleware(['auth', 'verified'])->name('metas');
 
 Route::post('/presupuestos', [BudgetController::class, 'store'])->middleware(['auth', 'verified'])->name('budgets.store');
+
+// Ruta para la nueva página de Historial
+Route::get('/historial', [App\Http\Controllers\BudgetController::class, 'history'])->middleware(['auth', 'verified'])->name('historial');
+
+// Actualizamos la ruta de exportar para que acepte un ID opcional al final ({id?})
+Route::get('/presupuestos/exportar/{id?}', [App\Http\Controllers\BudgetController::class, 'export'])->middleware(['auth', 'verified'])->name('budgets.export');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
