@@ -21,28 +21,27 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
     public function array(): array
     {
         $rows = [];
-        // Decodificamos los detalles del presupuesto
         $details = is_string($this->budget->details) ? json_decode($this->budget->details, true) : $this->budget->details;
 
-        // 1. Fila de Ingreso
+        // 1. Ingresos
         $rows[] = ['💰 INGRESO', 'Quincena Total', $this->budget->income];
-        $rows[] = ['', '', '']; // Espacio en blanco
+        $rows[] = ['', '', '']; 
 
-        // 2. Filas de Gastos Fijos
+        // 2. Gastos Fijos
         foreach ($details['fixed'] ?? [] as $fixed) {
             $rows[] = ['📉 Gasto Fijo', $fixed['name'], $fixed['amount']];
         }
-        $rows[] = ['', '', '']; // Espacio en blanco
+        $rows[] = ['', '', ''];
 
-        // 3. Filas de Distribución (Si hay)
-        if (!empty($details['distribution'])) {
-            foreach ($details['distribution'] as $dist) {
-                $rows[] = ['🎯 Distribución', $dist['name'], $dist['amount']];
+        // 3. ⚔️ NUEVA SECCIÓN: Pagos a Deudas
+        if (!empty($details['debt_payments'])) {
+            foreach ($details['debt_payments'] as $payment) {
+                $rows[] = ['⚔️ Ataque a Deuda', $payment['name'], $payment['amount']];
             }
-            $rows[] = ['', '', '']; // Espacio en blanco
+            $rows[] = ['', '', ''];
         }
 
-        // 4. Fila Final (Capital Libre)
+        // 4. Resumen Final
         $rows[] = ['⚖️ RESUMEN', 'Capital Libre Restante', $details['remaining'] ?? 0];
 
         return $rows;
@@ -50,17 +49,12 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
 
     public function headings(): array
     {
-        return [
-            'Categoría',
-            'Concepto',
-            'Monto (RD$)'
-        ];
+        return ['Categoría', 'Concepto', 'Monto (RD$)'];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            // Estilo para la primera fila (Encabezados): Negrita, texto blanco, fondo azul oscuro
             1 => [
                 'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
                 'fill' => ['fillType' => 'solid', 'startColor' => ['argb' => 'FF1E3A8A']]

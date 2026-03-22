@@ -15,6 +15,13 @@ class Debt extends Model
         'name', 
         'balance', 
         'interest_rate', 
-        'minimum_payment'
+        'minimum_payment',
+        'type', 
+        'credit_limit', 
+        'cutoff_date', 
+        'payment_date', 
+        'original_amount',
+        'currency', 
+        'overdraft_percentage'
     ];
 }

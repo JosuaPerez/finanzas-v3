@@ -20,30 +20,61 @@ class DebtController extends Controller
             'user_id' => auth()->id(),
             'name' => $request->name,
             'balance' => $request->balance,
-            'interest_rate' => $request->interest_rate,
-            'minimum_payment' => $request->minimum_payment,
+            'interest_rate' => $request->interest_rate ?? 0,
+            'minimum_payment' => $request->minimum_payment ?? 0,
+            'type' => $request->type ?? 'loan',
+            'credit_limit' => $request->credit_limit,
+            'cutoff_date' => $request->cutoff_date,
+            'payment_date' => $request->payment_date,
+            'original_amount' => $request->original_amount,
+            'currency' => $request->currency ?? 'DOP',
+            'overdraft_percentage' => $request->overdraft_percentage ?? 0,
         ]);
 
         return redirect()->route('deudas');
     }
 
     // Función para Abonar al saldo
-    public function pay(Request $request, Debt $debt)
+    public function pay(Request $request, $id)
     {
-        // Seguridad: Verificar que la deuda pertenece a este usuario
-        if ($debt->user_id !== auth()->id()) {
-            abort(403);
-        }
-
         $request->validate([
             'amount' => 'required|numeric|min:0.01'
         ]);
 
-        // Restamos el pago al saldo actual. El "max(0, ...)" evita que el saldo quede en negativo.
-        $debt->balance = max(0, $debt->balance - $request->amount);
+        $amount = $request->amount;
+        
+        // 1. Descontamos el saldo de la deuda
+        $debt = \App\Models\Debt::where('user_id', auth()->id())->findOrFail($id);
+        $debt->balance -= $amount;
+        if ($debt->balance < 0) {
+            $debt->balance = 0; 
+        }
         $debt->save();
 
-        return redirect()->back();
+        // 2. Buscamos el presupuesto para restar las municiones Y GUARDAR EL RECIBO
+        $budget = \App\Models\Budget::where('user_id', auth()->id())->latest()->first();
+        
+        if ($budget) {
+            $details = is_string($budget->details) ? json_decode($budget->details, true) : $budget->details;
+            
+            // Restamos del capital libre
+            $currentRemaining = $details['remaining'] ?? 0;
+            $details['remaining'] = max(0, $currentRemaining - $amount);
+            
+            // 🛠️ LA MAGIA: Guardamos el recibo del pago
+            if (!isset($details['debt_payments'])) {
+                $details['debt_payments'] = [];
+            }
+            $details['debt_payments'][] = [
+                'name' => $debt->name,
+                'amount' => $amount,
+            ];
+            
+            $budget->details = $details;
+            $budget->save();
+        }
+
+        return redirect()->back()->with('success', 'Disparo certero. Saldo actualizado.');
     }
 
     // Función para Eliminar una deuda
