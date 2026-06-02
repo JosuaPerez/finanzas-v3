@@ -1,5 +1,5 @@
-# 1. Usar el motor oficial de PHP
-FROM php:8.2-cli
+# 1. Usar el motor oficial de PHP (Actualizado a 8.3)
+FROM php:8.3-cli
 
 # 2. Instalar herramientas del sistema, PostgreSQL y librerías de imágenes (GD)
 RUN apt-get update && apt-get install -y \
