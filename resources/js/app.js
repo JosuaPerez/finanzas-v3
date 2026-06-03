@@ -22,6 +22,9 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#4B5563',
+        // El color de la barra (Azul brillante)
+        color: '#2563eb',
+        // Mostrar la barra instantáneamente (0 milisegundos de retraso)
+        delay: 0, 
     },
 });

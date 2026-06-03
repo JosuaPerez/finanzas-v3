@@ -14,9 +14,15 @@ Route::get('/dashboard', function () {
     // Buscamos los presupuestos del usuario actual, ordenados del más reciente al más viejo
     $misPresupuestos = Budget::where('user_id', auth()->id())->latest()->get();
 
+    // Sumamos el 'balance' de todas las deudas que sean mayores a cero
+    $totalDebts = Debt::where('user_id', auth()->id())
+                      ->where('balance', '>', 0)
+                      ->sum('balance');
+
     // Se los enviamos a la vista 'Dashboard'
     return Inertia::render('Dashboard', [
         'budgets' => $misPresupuestos,
+        'totalDebts' => $totalDebts
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
