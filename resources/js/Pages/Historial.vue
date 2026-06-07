@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -30,18 +31,27 @@ const getDebtPaymentsTotal = (details) => {
 const showModal = ref(false);
 const selectedBudget = ref(null);
 
+const notification = ref({ show: false, message: '', type: 'success' });
+const showNotification = (message, type = 'success') => {
+    notification.value = { show: true, message, type };
+    setTimeout(() => { notification.value.show = false; }, 4000);
+};
+
 const openDetails = (budget) => {
     selectedBudget.value = { ...budget, parsedDetails: parseDetails(budget.details) };
     showModal.value = true;
 };
 const closeModal = () => { showModal.value = false; selectedBudget.value = null; };
 
-const downloadExcel = (id) => { window.location.href = route('budgets.export', id); };
+const downloadExcel = (id) => {
+    showNotification('Generando reporte de batalla...', 'success');
+    window.location.href = route('budgets.export', id);
+};
 </script>
 
 <template>
 
-    <Head title="Historial de Batallas" />
+    <Head title="Sala de Archivos" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -49,8 +59,8 @@ const downloadExcel = (id) => { window.location.href = route('budgets.export', i
                 <h2 class="font-black text-lg sm:text-2xl text-white uppercase tracking-widest flex items-center gap-2">
                     🗂️ Sala de Archivos
                 </h2>
-                
-                <Link :href="route('dashboard')" 
+
+                <Link :href="route('dashboard')"
                       class="shrink-0 flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-700 hover:border-blue-500/50 text-slate-300 hover:text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-lg hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] group">
                     <span class="text-lg sm:text-xl group-hover:-translate-x-1 transition-transform">❮</span>
                     <div class="flex-col text-left leading-none hidden sm:flex">
@@ -63,123 +73,167 @@ const downloadExcel = (id) => { window.location.href = route('budgets.export', i
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl p-6 md:p-8">
-                    <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Historial de Batallas</h1>
-                    <p class="text-gray-500 mb-8">Revisa tus presupuestos, los ataques a deudas y descarga reportes en
-                        Excel.
-                    </p>
 
+                <!-- Main panel — unified dark glassmorphism -->
+                <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
+
+                    <!-- Ambient accent line -->
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+
+                    <!-- Panel header -->
+                    <div class="mb-8 pb-4 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                                🗂️ Historial de Batallas
+                            </h1>
+                            <p class="text-slate-400 text-sm mt-1 font-medium">
+                                Revisa tus presupuestos, los ataques a deudas y descarga reportes de batalla.
+                            </p>
+                        </div>
+                        <div v-if="budgets && budgets.length > 0" class="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-lg">
+                            {{ budgets.length }} {{ budgets.length === 1 ? 'registro' : 'registros' }}
+                        </div>
+                    </div>
+
+                    <!-- Budget grid -->
                     <div v-if="budgets && budgets.length > 0"
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="budget in budgets" :key="budget.id"
-                            class="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
 
-                            <div class="bg-gray-50 border-b border-gray-100 p-5">
-                                <h3 class="font-bold text-lg text-blue-900 mb-1">📄 {{ budget.title }}</h3>
-                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Guardado el: {{
-                                    new
-                                    Date(budget.created_at).toLocaleDateString('es-DO') }}</p>
+                        <div v-for="budget in budgets" :key="budget.id"
+                            class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col group">
+
+                            <!-- Card header -->
+                            <div class="bg-slate-950/50 border-b border-slate-800/80 p-5 relative overflow-hidden">
+                                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
+                                <h3 class="font-black text-base text-white mb-1 truncate">📄 {{ budget.title }}</h3>
+                                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                                    Guardado: {{ new Date(budget.created_at).toLocaleDateString('es-DO') }}
+                                </p>
                             </div>
 
-                            <div class="p-5 flex-grow space-y-4">
-                                <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                                    <span class="text-gray-500 font-medium text-sm">Ingreso Quincenal</span>
-                                    <span class="text-gray-900 font-bold">RD$ {{ formatMoney(budget.income) }}</span>
+                            <!-- Card body -->
+                            <div class="p-5 flex-grow space-y-3">
+                                <div class="flex justify-between items-center pb-3 border-b border-slate-800/60">
+                                    <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Ingreso Quincenal</span>
+                                    <span class="text-white font-black font-mono text-sm">RD$ {{ formatMoney(budget.income) }}</span>
                                 </div>
-                                <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                                    <span class="text-gray-500 font-medium text-sm">Gastos Fijos</span>
-                                    <span class="text-gray-900 font-bold">RD$ {{
-                                        formatMoney(budget.fixed_expenses_total)
-                                        }}</span>
+                                <div class="flex justify-between items-center pb-3 border-b border-slate-800/60">
+                                    <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Gastos Fijos</span>
+                                    <span class="text-red-400 font-black font-mono text-sm">- RD$ {{ formatMoney(budget.fixed_expenses_total) }}</span>
                                 </div>
 
                                 <div v-if="getDebtPaymentsTotal(budget.details) > 0"
-                                    class="flex justify-between items-center pb-3 border-b border-gray-100">
-                                    <span class="text-red-500 font-bold text-sm">Ataques a Deudas</span>
-                                    <span class="text-red-600 font-black">- RD$ {{
-                                        formatMoney(getDebtPaymentsTotal(budget.details)) }}</span>
+                                    class="flex justify-between items-center pb-3 border-b border-slate-800/60">
+                                    <span class="text-red-400 font-black text-xs uppercase tracking-wider flex items-center gap-1">⚔️ Ataques a Deudas</span>
+                                    <span class="text-red-400 font-black font-mono text-sm">- RD$ {{ formatMoney(getDebtPaymentsTotal(budget.details)) }}</span>
                                 </div>
 
-                                <div
-                                    class="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                    <span class="text-blue-800 font-bold text-sm">Capital Libre Restante</span>
-                                    <span class="text-blue-900 font-black">RD$ {{
-                                        formatMoney(getRemaining(budget.details))
-                                        }}</span>
+                                <!-- Capital libre (highlighted row) -->
+                                <div class="flex justify-between items-center bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
+                                    <span class="text-blue-400 font-black text-xs uppercase tracking-wider">💰 Capital Libre</span>
+                                    <span class="text-blue-300 font-black font-mono">RD$ {{ formatMoney(getRemaining(budget.details)) }}</span>
                                 </div>
                             </div>
 
-                            <div class="p-5 pt-0 mt-auto flex gap-2">
+                            <!-- Card actions -->
+                            <div class="p-4 pt-0 mt-auto flex gap-3">
                                 <button @click="openDetails(budget)"
-                                    class="w-1/2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-2 rounded-xl text-sm transition-colors">🔍
-                                    Detalles</button>
+                                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-500">
+                                    🔍 Detalles
+                                </button>
                                 <button @click="downloadExcel(budget.id)"
-                                    class="w-1/2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-bold py-3 px-2 rounded-xl text-sm transition-colors flex justify-center items-center gap-1">📊
-                                    Excel</button>
+                                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                                    📊 Excel
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div v-else class="text-center p-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                        <div class="text-4xl mb-3">🗄️</div>
-                        <h3 class="text-lg font-bold text-gray-900">Sala de archivos vacía</h3>
+                    <!-- Empty state -->
+                    <div v-else
+                        class="text-center p-16 border-2 border-dashed border-slate-700/60 rounded-3xl bg-slate-950/30 mt-2">
+                        <div class="text-6xl mb-4 opacity-50">🗄️</div>
+                        <h3 class="text-2xl font-black text-white tracking-tight">Sala de Archivos Vacía</h3>
+                        <p class="text-slate-400 mt-2 font-medium text-sm">Aún no hay presupuestos guardados. Ve al <span class="text-blue-400 font-bold">Presupuesto</span> y crea tu primer plan de batalla.</p>
                     </div>
+
                 </div>
             </div>
         </div>
 
+        <!-- ===================== MODAL DE DETALLES ===================== -->
         <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
             aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/75 transition-opacity backdrop-blur-sm" @click="closeModal"></div>
+                <div class="fixed inset-0 bg-slate-950/90 transition-opacity backdrop-blur-md" @click="closeModal"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
                 <div
-                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3 class="text-xl leading-6 font-extrabold text-gray-900 mb-4 flex justify-between">📄 {{
-                            selectedBudget.title }} <button @click="closeModal"
-                                class="text-gray-400 hover:text-red-500">&times;</button></h3>
+                    class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
 
-                        <div class="flex justify-between border-b border-gray-200 pb-3 mb-3">
-                            <span class="text-gray-500 font-bold uppercase text-sm">Ingreso Total:</span>
-                            <span class="text-blue-700 font-extrabold text-lg">RD$ {{ formatMoney(selectedBudget.income)
-                                }}</span>
+                    <!-- Modal header -->
+                    <div class="bg-slate-900 px-6 pt-8 pb-4 border-b border-slate-800">
+                        <h3 class="text-xl leading-6 font-black text-white flex justify-between items-start tracking-tight">
+                            <span>📄 {{ selectedBudget.title }}</span>
+                            <button @click="closeModal"
+                                class="text-slate-500 hover:text-red-400 transition-colors ml-4 shrink-0 text-2xl leading-none">&times;</button>
+                        </h3>
+                    </div>
+
+                    <!-- Modal body -->
+                    <div class="bg-slate-900 px-6 py-6">
+                        <div class="flex justify-between bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner">
+                            <span class="text-slate-400 font-black uppercase text-xs tracking-wider">Ingreso Total:</span>
+                            <span class="text-blue-400 font-black font-mono text-lg">RD$ {{ formatMoney(selectedBudget.income) }}</span>
                         </div>
 
-                        <h4 class="font-bold text-gray-800 mt-5 mb-3">📉 Desglose de Gastos Fijos:</h4>
-                        <ul class="space-y-2 mb-4">
+                        <h4 class="font-black text-slate-300 text-xs uppercase tracking-widest mb-3">📉 Suministros Consumidos:</h4>
+                        <ul class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1">
                             <li v-for="item in selectedBudget.parsedDetails.fixed" :key="item.name"
-                                class="flex justify-between text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <span class="text-gray-700 font-medium">{{ item.name }}</span>
-                                <span class="text-gray-900 font-bold">RD$ {{ formatMoney(item.amount) }}</span>
+                                class="flex justify-between text-sm bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                                <span class="text-slate-300 font-medium">{{ item.name }}</span>
+                                <span class="text-red-400 font-black font-mono">RD$ {{ formatMoney(item.amount) }}</span>
                             </li>
                         </ul>
 
-                        <div
-                            v-if="selectedBudget.parsedDetails.debt_payments && selectedBudget.parsedDetails.debt_payments.length > 0">
-                            <h4 class="font-bold text-red-800 mt-5 mb-3">⚔️ Municiones Disparadas (Deudas):</h4>
+                        <div v-if="selectedBudget.parsedDetails.debt_payments && selectedBudget.parsedDetails.debt_payments.length > 0">
+                            <h4 class="font-black text-red-400 text-xs uppercase tracking-widest mb-3 mt-5">⚔️ Municiones Disparadas (Deudas):</h4>
                             <ul class="space-y-2 mb-4">
                                 <li v-for="pago in selectedBudget.parsedDetails.debt_payments" :key="pago.name"
-                                    class="flex justify-between text-sm bg-red-50 p-3 rounded-lg border border-red-100">
-                                    <span class="text-red-700 font-bold">{{ pago.name }}</span>
-                                    <span class="text-red-900 font-black">- RD$ {{ formatMoney(pago.amount) }}</span>
+                                    class="flex justify-between text-sm bg-red-900/20 p-3 rounded-xl border border-red-500/20">
+                                    <span class="text-red-300 font-bold">{{ pago.name }}</span>
+                                    <span class="text-red-400 font-black font-mono">- RD$ {{ formatMoney(pago.amount) }}</span>
                                 </li>
                             </ul>
                         </div>
 
-                        <div
-                            class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl flex justify-between items-center border border-blue-100 shadow-inner">
-                            <span class="font-bold text-blue-800">Capital Libre Restante:</span>
-                            <span class="font-extrabold text-blue-900 text-xl">RD$ {{
-                                formatMoney(selectedBudget.parsedDetails.remaining) }}</span>
+                        <!-- Capital libre -->
+                        <div class="mt-6 p-5 bg-blue-900/20 rounded-2xl flex justify-between items-center border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
+                            <span class="font-black text-blue-400 uppercase text-xs tracking-wider">💰 Capital Libre Restante:</span>
+                            <span class="font-black text-white font-mono text-2xl">RD$ {{ formatMoney(selectedBudget.parsedDetails.remaining) }}</span>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-4 sm:px-6 flex justify-end">
+
+                    <!-- Modal footer -->
+                    <div class="bg-slate-950 px-6 py-4 flex justify-end gap-3 border-t border-slate-800">
+                        <button @click="downloadExcel(selectedBudget.id)"
+                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                            📊 Descargar Excel
+                        </button>
                         <button @click="closeModal"
-                            class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-6 rounded-lg transition-colors">Cerrar</button>
+                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all duration-300 ease-out hover:scale-105 bg-transparent hover:bg-slate-800 text-slate-300 border border-slate-600 hover:border-slate-500">
+                            Cerrar Archivo
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Combat Log HUD -->
+        <CombatLog
+            :show="notification.show"
+            :message="notification.message"
+            :type="notification.type"
+        />
+
     </AuthenticatedLayout>
 </template>
