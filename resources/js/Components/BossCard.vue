@@ -1,4 +1,17 @@
 <script setup>
+import { formatMoney, getSymbol, getHPStats } from '@/composables/useDebtUtils';
+
+/**
+ * BossCard.vue — Renders a single debt as an RPG "boss" enemy card.
+ *
+ * REFACTORED (Phase 4): utility functions (formatMoney, getSymbol, getHPStats)
+ * are no longer received as props. They are imported directly from the
+ * useDebtUtils composable, eliminating prop-drilling from Deudas.vue.
+ *
+ * Props:
+ *   debt  {Object}  — The debt object from the database.
+ *   index {Number}  — Position in the sorted list (0 = priority target).
+ */
 const props = defineProps({
     debt: {
         type: Object,
@@ -6,18 +19,6 @@ const props = defineProps({
     },
     index: {
         type: Number,
-        required: true,
-    },
-    formatMoney: {
-        type: Function,
-        required: true,
-    },
-    getSymbol: {
-        type: Function,
-        required: true,
-    },
-    getHPStats: {
-        type: Function,
         required: true,
     },
 });

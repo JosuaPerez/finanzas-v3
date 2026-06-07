@@ -4,6 +4,7 @@ import BossCard from '@/Components/BossCard.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 const props = defineProps({
     debts: Array,
@@ -24,65 +25,13 @@ const form = ref({
     overdraft_percentage: ''
 });
 
-const formatMoney = (amount) => Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const getSymbol = (currency) => currency === 'USD' ? 'US$' : 'RD$';
+// formatMoney, getSymbol, getHPStats, cleanNum, vMoney → imported from @/composables/useDebtUtils
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
     setTimeout(() => { notification.value.show = false; }, 4000);
 };
-
-const vMoney = {
-    mounted: (el) => {
-        el.addEventListener('input', (e) => {
-            if (!e.isTrusted) return;
-            let cursorPosition = el.selectionStart;
-            let oldLength = el.value.length;
-            let val = el.value.replace(/[^\d.]/g, '');
-            let parts = val.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            let formatted = parts.join('.');
-
-            if (el.value !== formatted) {
-                el.value = formatted;
-                cursorPosition += (formatted.length - oldLength);
-                el.setSelectionRange(cursorPosition, cursorPosition);
-                el.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-};
-
-const cleanNum = (val) => {
-    if (val === null || val === undefined || val === '') return 0;
-    return parseFloat(String(val).replace(/,/g, '')) || 0;
-};
-
-// --- LÓGICA DE GAMIFICACIÓN (HP BARS) ---
-const getHPStats = (debt) => {
-    let maxHP = debt.balance; // Por defecto, la vida máxima es lo que debe actualmente
-
-    if (debt.type === 'loan' && debt.original_amount > 0) {
-        maxHP = debt.original_amount; // En préstamos, la vida máxima es el monto original
-    } else if (debt.type === 'credit_card' && debt.credit_limit > 0) {
-        // En tarjetas, la vida máxima es el límite + sobregiro
-        maxHP = debt.credit_limit + (debt.credit_limit * ((debt.overdraft_percentage || 0) / 100));
-    }
-
-    // Si por los intereses la deuda superó el límite original, ajustamos para que no rompa la barra
-    if (debt.balance > maxHP) maxHP = debt.balance;
-
-    let percent = maxHP > 0 ? (debt.balance / maxHP) * 100 : 100;
-    
-    return {
-        current: debt.balance,
-        max: maxHP,
-        percent: percent > 100 ? 100 : percent,
-        isCritical: percent > 80 // Si le queda más del 80% de vida, es una amenaza crítica
-    };
-};
-// -----------------------------------------
 
 const strategy = ref('avalanche');
 const sortedDebts = computed(() => {
@@ -377,9 +326,6 @@ const submitPayment = () => {
                                     :key="debt.id"
                                     :debt="debt"
                                     :index="index"
-                                    :formatMoney="formatMoney"
-                                    :getSymbol="getSymbol"
-                                    :getHPStats="getHPStats"
                                     @attack="openPayModal"
                                     @abort="confirmDelete"
                                 />

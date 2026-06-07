@@ -3,7 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
-import { formatCurrency } from '@/utils'; // La nueva herramienta global
+import { formatCurrency } from '@/utils';
+import { cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 // --- LÓGICA DE ONBOARDING (TUTORIAL) ---
 const showOnboarding = ref(false);
@@ -45,47 +46,8 @@ const showNotification = (message, type = 'success') => {
     setTimeout(() => { notification.value.show = false; }, 4000);
 };
 
-const vMoney = {
-    mounted: (el) => {
-        el.addEventListener('input', (e) => {
-            // Si el evento fue disparado por nuestro propio código, lo ignoramos para evitar bucles
-            if (!e.isTrusted) return;
+// cleanNum and vMoney → imported from @/composables/useDebtUtils
 
-            // 1. Guardamos la posición exacta del cursor
-            let cursorPosition = el.selectionStart;
-            let oldLength = el.value.length;
-
-            // 2. Limpiamos todo el texto: dejamos solo números y puntos decimales
-            let val = el.value.replace(/[^\d.]/g, '');
-
-            // 3. Separamos los decimales (por si el usuario escribe un punto)
-            let parts = val.split('.');
-
-            // 4. Agregamos las comas automáticamente a la parte de los miles
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-            // Volvemos a unir los enteros con los decimales
-            let formatted = parts.join('.');
-
-            // 5. Aplicamos el formato al instante
-            if (el.value !== formatted) {
-                el.value = formatted;
-
-                // 6. Magia táctica: Ajustamos el cursor para que no salte al final al aparecer la coma
-                cursorPosition += (formatted.length - oldLength);
-                el.setSelectionRange(cursorPosition, cursorPosition);
-
-                // 7. Le avisamos a Vue (v-model) que actualice sus cálculos internos
-                el.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-};
-
-const cleanNum = (val) => {
-    if (val === null || val === undefined || val === '') return 0;
-    return parseFloat(String(val).replace(/,/g, '')) || 0;
-};
 
 // --- CÁLCULOS AUTOMÁTICOS ACTUALIZADOS ---
 const totalFixed = computed(() => fixedExpenses.value.reduce((sum, item) => sum + cleanNum(item.amount), 0));

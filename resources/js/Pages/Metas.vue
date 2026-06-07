@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { formatMoney, getSymbol, cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 const props = defineProps({
     goals: { type: Array, default: () => [] },
@@ -17,8 +18,7 @@ const form = ref({
     deadline: ''
 });
 
-const formatMoney = (amount) => Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const getSymbol = (currency) => currency === 'USD' ? 'US$' : 'RD$';
+// formatMoney, getSymbol, cleanNum, vMoney → imported from @/composables/useDebtUtils
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -26,32 +26,6 @@ const showNotification = (message, type = 'success') => {
     setTimeout(() => { notification.value.show = false; }, 4000);
 };
 
-// Directiva táctica para formateo de moneda en vivo
-const vMoney = {
-    mounted: (el) => {
-        el.addEventListener('input', (e) => {
-            if (!e.isTrusted) return;
-            let cursorPosition = el.selectionStart;
-            let oldLength = el.value.length;
-            let val = el.value.replace(/[^\d.]/g, '');
-            let parts = val.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            let formatted = parts.join('.');
-
-            if (el.value !== formatted) {
-                el.value = formatted;
-                cursorPosition += (formatted.length - oldLength);
-                el.setSelectionRange(cursorPosition, cursorPosition);
-                el.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-};
-
-const cleanNum = (val) => {
-    if (val === null || val === undefined || val === '') return 0;
-    return parseFloat(String(val).replace(/,/g, '')) || 0;
-};
 
 // --- LÓGICA DE CRAFTEO (RPG) ---
 const getForgeStats = (goal) => {
