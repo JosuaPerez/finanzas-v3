@@ -17,21 +17,43 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+use App\Models\Goal;
+
 Route::get('/dashboard', function () {
-    // Buscamos los presupuestos del usuario actual, ordenados del más reciente al más viejo
-    $misPresupuestos = Budget::where('user_id', auth()->id())->latest()->get();
+    $uid = auth()->id();
 
-    // Sumamos el 'balance' de todas las deudas que sean mayores a cero
-    $totalDebts = Debt::where('user_id', auth()->id())
-                      ->where('balance', '>', 0)
-                      ->sum('balance');
+    $totalDebts       = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
+    $activeDebtCount  = Debt::where('user_id', $uid)->where('balance', '>', 0)->count();
+    $totalGoalsSaved  = Goal::where('user_id', $uid)->sum('current_amount');
+    $totalGoalsTarget = Goal::where('user_id', $uid)->sum('target_amount');
+    $budgetCount      = Budget::where('user_id', $uid)->count();
+    $lastBudget       = Budget::where('user_id', $uid)->latest()->first();
+    $lastCapitalLibre = 0;
+    if ($lastBudget) {
+        $details = is_string($lastBudget->details) ? json_decode($lastBudget->details, true) : $lastBudget->details;
+        $lastCapitalLibre = $details['remaining'] ?? 0;
+    }
 
-    // Se los enviamos a la vista 'Dashboard'
     return Inertia::render('Dashboard', [
-        'budgets' => $misPresupuestos,
-        'totalDebts' => $totalDebts
+        'totalDebts'       => (float) $totalDebts,
+        'activeDebtCount'  => (int)   $activeDebtCount,
+        'totalGoalsSaved'  => (float) $totalGoalsSaved,
+        'totalGoalsTarget' => (float) $totalGoalsTarget,
+        'budgetCount'      => (int)   $budgetCount,
+        'lastCapitalLibre' => (float) $lastCapitalLibre,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/presupuesto', function () {
+    $uid            = auth()->id();
+    $misPresupuestos = Budget::where('user_id', $uid)->latest()->get();
+    $totalDebts      = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
+
+    return Inertia::render('Presupuesto', [
+        'budgets'    => $misPresupuestos,
+        'totalDebts' => (float) $totalDebts,
+    ]);
+})->middleware(['auth', 'verified'])->name('presupuesto');
 
 Route::get('/deudas', function () {
     // 1. Buscamos las deudas
