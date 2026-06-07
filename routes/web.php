@@ -9,7 +9,13 @@ use App\Models\Debt;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::redirect('/', '/login');
+// Root: guests see the Landing Page, authenticated users go straight to the dashboard.
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+    return Inertia::render('Welcome');
+})->name('home');
 
 Route::get('/dashboard', function () {
     // Buscamos los presupuestos del usuario actual, ordenados del más reciente al más viejo

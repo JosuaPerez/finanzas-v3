@@ -57,7 +57,7 @@ const submit = () => {
                     <label for="name" class="block text-sm font-bold text-slate-700 mb-1">Nombre Completo</label>
                     <input id="name" type="text"
                         class="w-full rounded-xl border-slate-300 focus:border-red-500 focus:ring-red-500 shadow-sm bg-slate-50"
-                        v-model="form.name" required autofocus autocomplete="name" placeholder="Ej. Juan Perez" />
+                        v-model="form.name" required autofocus autocomplete="name" placeholder="Ej: Nombre del guerrero" />
                     <p v-if="form.errors.name" class="mt-1 text-xs text-red-600 font-bold">{{ form.errors.name }}</p>
                 </div>
 

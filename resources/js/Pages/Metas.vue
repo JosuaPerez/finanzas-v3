@@ -136,7 +136,7 @@ const submitForge = () => {
     <Head title="Modo Guerra - Arsenal" />
 
     <AuthenticatedLayout>
-        <template #header>
+        <!-- <template #header>
             <div class="flex items-center justify-between w-full">
                 <h2 class="font-black text-lg sm:text-2xl text-white uppercase tracking-widest flex items-center gap-2">
                     🎯 El Arsenal (Mesa de Forja)
@@ -151,7 +151,7 @@ const submitForge = () => {
                     </div>
                 </Link>
             </div>
-        </template>
+        </template> -->
 
         <div class="py-12 relative">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">

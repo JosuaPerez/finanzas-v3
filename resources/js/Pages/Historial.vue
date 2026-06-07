@@ -54,7 +54,7 @@ const downloadExcel = (id) => {
     <Head title="Sala de Archivos" />
 
     <AuthenticatedLayout>
-        <template #header>
+        <!-- <template #header>
             <div class="flex items-center justify-between w-full">
                 <h2 class="font-black text-lg sm:text-2xl text-white uppercase tracking-widest flex items-center gap-2">
                     🗂️ Sala de Archivos
@@ -69,7 +69,7 @@ const downloadExcel = (id) => {
                     </div>
                 </Link>
             </div>
-        </template>
+        </template> -->
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">

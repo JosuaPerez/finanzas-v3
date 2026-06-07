@@ -2,26 +2,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { formatCurrency } from '@/utils';
 import { cleanNum, vMoney } from '@/composables/useDebtUtils';
 
-// --- LÓGICA DE ONBOARDING (TUTORIAL) ---
-const showOnboarding = ref(false);
 
-onMounted(() => {
-    // Si el usuario no tiene presupuestos guardados y no ha visto el tutorial en este navegador
-    if (props.budgets.length === 0 && !localStorage.getItem('onboarding_completado')) {
-        showOnboarding.value = true;
-    }
-});
-
-const aceptarMision = () => {
-    // Guardamos en la memoria del navegador que ya vio el tutorial
-    localStorage.setItem('onboarding_completado', 'true');
-    showOnboarding.value = false;
-    showNotification('¡Misión aceptada! Bienvenido al campo de batalla.', 'success');
-};
 
 const props = defineProps({
     budgets: Array,
@@ -117,89 +102,8 @@ const downloadAsCsv = () => {
 
     <Head title="Presupuesto" />
 
-    <transition enter-active-class="transition ease-out duration-500"
-        enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        enter-to-class="opacity-100 translate-y-0 sm:scale-100" leave-active-class="transition ease-in duration-300"
-        leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-        leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-
-        <div v-if="showOnboarding"
-            class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div
-                    class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20">
-                </div>
-                <div
-                    class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20">
-                </div>
-            </div>
-
-            <div
-                class="relative w-full max-w-4xl bg-slate-900/90 backdrop-blur-xl border border-slate-700 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row">
-
-                <div
-                    class="w-full md:w-5/12 bg-slate-950/50 p-8 md:p-12 flex flex-col justify-center border-r border-slate-800">
-                    <div
-                        class="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-inner border border-blue-500/30">
-                        ⚔️</div>
-                    <h1 class="text-3xl md:text-4xl font-black text-white leading-tight mb-4 tracking-tight">Maneja tus
-                        finanzas como un videojuego.</h1>
-                    <p class="text-slate-400 text-lg leading-relaxed mb-8">Se acabó el estrés de los números. Aquí tu
-                        economía es un campo de batalla, y tú eres el Comandante.</p>
-                    <button @click="aceptarMision"
-                        class="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] text-lg">
-                        Aceptar Misión
-                    </button>
-                </div>
-
-                <div class="w-full md:w-7/12 p-8 md:p-12 flex flex-col justify-center gap-8">
-                    <div class="flex items-start gap-5">
-                        <div
-                            class="flex-shrink-0 w-12 h-12 bg-blue-900/50 border border-blue-500/30 rounded-full flex items-center justify-center text-xl shadow-lg">
-                            🛡️</div>
-                        <div>
-                            <h3 class="text-white font-bold text-xl mb-1">1. Organiza tus Suministros</h3>
-                            <p class="text-slate-400 text-sm leading-relaxed">En la pestaña <span
-                                    class="text-blue-400 font-semibold">Presupuesto</span>, distribuyes tu salario antes
-                                del ataque. Asegura tu munición (gastos fijos) para ver cuánto capital libre te queda.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-5">
-                        <div
-                            class="flex-shrink-0 w-12 h-12 bg-red-900/50 border border-red-500/30 rounded-full flex items-center justify-center text-xl shadow-lg">
-                            🔥</div>
-                        <div>
-                            <h3 class="text-white font-bold text-xl mb-1">2. Derrota a los Jefes</h3>
-                            <p class="text-slate-400 text-sm leading-relaxed">Olvida las tablas aburridas. En <span
-                                    class="text-red-400 font-semibold">Deudas</span>, cada préstamo es un enemigo con
-                                una barra de vida (HP). Hazles daño crítico con cada pago hasta eliminarlos.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-5">
-                        <div
-                            class="flex-shrink-0 w-12 h-12 bg-emerald-900/50 border border-emerald-500/30 rounded-full flex items-center justify-center text-xl shadow-lg">
-                            🎯</div>
-                        <div>
-                            <h3 class="text-white font-bold text-xl mb-1">3. Craftea tu Inventario</h3>
-                            <p class="text-slate-400 text-sm leading-relaxed">En la armería de <span
-                                    class="text-emerald-400 font-semibold">Metas</span>, tus ahorros no son simples
-                                números. Son proyectos que vas forjando y subiendo de nivel mes a mes.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </transition>
-
     <AuthenticatedLayout>
-        <template #header>
-
-            <h2 class="font-semibold text-xl text-white leading-tight tracking-tight flex items-center gap-2">
-                🛡️ Panel de Finanzas
-            </h2>
-        </template>
-
+        
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
