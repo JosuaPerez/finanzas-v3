@@ -1,5 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import BossCard from '@/Components/BossCard.vue';
+import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
@@ -92,6 +94,7 @@ const showPayModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedDebt = ref(null);
 const paymentAmount = ref('');
+const isSubmitting = ref(false);
 
 const openPayModal = (debt) => {
     selectedDebt.value = debt;
@@ -127,22 +130,26 @@ const saveDebt = () => {
         original_amount: form.value.type === 'loan' ? cleanNum(form.value.original_amount) : null,
     };
 
+    isSubmitting.value = true;
     router.post(route('debts.store'), payload, {
         preserveScroll: true,
         onSuccess: () => {
             form.value = { type: 'loan', currency: 'DOP', name: '', balance: '', interest_rate: '', minimum_payment: '', credit_limit: '', cutoff_date: '', payment_date: '', original_amount: '', overdraft_percentage: '' };
             showNotification('¡Nuevo enemigo detectado en el radar!', 'success');
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 
 const executeDelete = () => {
+    isSubmitting.value = true;
     router.delete(route('debts.destroy', selectedDebt.value.id), {
         preserveScroll: true,
         onSuccess: () => {
             showNotification('Enemigo aniquilado y borrado de los registros.', 'success');
             closeDeleteModal();
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 
@@ -153,6 +160,7 @@ const submitPayment = () => {
         return;
     }
 
+    isSubmitting.value = true;
     router.post(route('debts.pay', selectedDebt.value.id), { amount: amount }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -162,7 +170,8 @@ const submitPayment = () => {
                 showNotification(`¡Impacto Crítico! Le quitaste ${formatMoney(amount)} de HP.`, 'success');
             }
             closePayModal();
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 </script>
@@ -313,7 +322,9 @@ const submitPayment = () => {
                                     </div>
                                 </div>
                                 <button @click="saveDebt"
-                                    class="w-full mt-6 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-4 px-4 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all transform hover:-translate-y-1">
+                                    :disabled="isSubmitting"
+                                    :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                                    class="w-full mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                                     Fijar Objetivo
                                 </button>
                             </div>
@@ -340,106 +351,45 @@ const submitPayment = () => {
                         </div>
 
                         <!-- LISTA DE JEFES -->
-                        <div class="bg-slate-50 overflow-hidden shadow-sm sm:rounded-2xl p-6 md:p-8">
-                            
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4">
-                                <h2 class="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
+                        <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
+                            <!-- Ambient accent line -->
+                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-slate-800/80">
+                                <h2 class="text-3xl font-black text-white flex items-center gap-3 tracking-tight">
                                     ⚔️ Zona de Combate
                                 </h2>
-                                <div v-if="debts && debts.length > 1" class="flex bg-slate-200 p-1 rounded-lg mt-3 sm:mt-0">
+                                <div v-if="debts && debts.length > 1" class="flex bg-slate-800/80 p-1 rounded-xl mt-3 sm:mt-0 border border-slate-700/50">
                                     <button @click="strategy = 'avalanche'"
-                                        :class="strategy === 'avalanche' ? 'bg-slate-900 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-800'"
-                                        class="px-4 py-2 rounded-md text-xs transition-all uppercase tracking-wider">🌋 Avalancha</button>
+                                        :class="strategy === 'avalanche' ? 'bg-slate-950 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-300'"
+                                        class="px-4 py-2 rounded-lg text-xs transition-all uppercase tracking-wider">🌋 Avalancha</button>
                                     <button @click="strategy = 'snowball'"
-                                        :class="strategy === 'snowball' ? 'bg-slate-900 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-800'"
-                                        class="px-4 py-2 rounded-md text-xs transition-all uppercase tracking-wider">⛄ Bola Nieve</button>
+                                        :class="strategy === 'snowball' ? 'bg-slate-950 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-300'"
+                                        class="px-4 py-2 rounded-lg text-xs transition-all uppercase tracking-wider">⛄ Bola Nieve</button>
                                 </div>
                             </div>
 
                             <div v-if="debts && debts.length > 0" class="space-y-6">
-                                
+
                                 <!-- TARJETA DE ENEMIGO (JEFE) -->
-                                <div v-for="(debt, index) in sortedDebts" :key="debt.id"
-                                    class="p-6 md:p-8 bg-slate-900 rounded-3xl flex flex-col relative overflow-hidden group shadow-2xl transition-all transform hover:-translate-y-1 border border-slate-800"
-                                    :class="{ 'ring-2 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]': index === 0 && debt.balance > 0 }">
-
-                                    <!-- Luces de Alarma para el objetivo principal -->
-                                    <div v-if="index === 0 && debt.balance > 0" class="absolute top-0 right-0 w-64 h-64 bg-red-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none animate-pulse"></div>
-
-                                    <div v-if="index === 0 && debt.balance > 0"
-                                        class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-red-600 text-white font-black px-6 py-1 rounded-b-xl text-xs shadow-md uppercase tracking-widest z-10">
-                                        Objetivo Prioritario
-                                    </div>
-
-                                    <!-- Cabecera del Jefe -->
-                                    <div class="flex justify-between items-start mb-6 relative z-10 mt-2">
-                                        <div class="flex items-center gap-4">
-                                            <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner border"
-                                                 :class="debt.type === 'credit_card' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' : 'bg-blue-500/20 border-blue-500/50 text-blue-400'">
-                                                {{ debt.type === 'credit_card' ? '👾' : '👹' }}
-                                            </div>
-                                            <div>
-                                                <h3 class="font-black text-2xl text-white tracking-tight">{{ debt.name }}</h3>
-                                                <div class="flex items-center gap-2 mt-1">
-                                                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700">LVL. {{ debt.interest_rate }} (Interés)</span>
-                                                    <span :class="debt.currency === 'USD' ? 'text-green-400 bg-green-400/10 border-green-400/30' : 'text-blue-400 bg-blue-400/10 border-blue-400/30'"
-                                                          class="text-xs font-black px-2 py-1 rounded-md border">{{ debt.currency }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- BARRA DE VIDA (HP) -->
-                                    <div class="mb-6 bg-slate-950 p-4 rounded-2xl border border-slate-800 relative z-10 shadow-inner">
-                                        <div class="flex justify-between items-end mb-2">
-                                            <span class="text-red-500 font-black tracking-widest text-xs uppercase flex items-center gap-2">
-                                                HP del Jefe
-                                                <span v-if="getHPStats(debt).isCritical" class="animate-pulse text-red-400 text-[10px] border border-red-500/50 bg-red-500/20 px-1 rounded">¡CRÍTICO!</span>
-                                            </span>
-                                            <span class="text-white font-mono font-bold text-sm">
-                                                {{ formatMoney(getHPStats(debt).current) }} <span class="text-slate-500">/ {{ formatMoney(getHPStats(debt).max) }}</span>
-                                            </span>
-                                        </div>
-                                        <div class="w-full bg-slate-800 rounded-full h-4 overflow-hidden relative border border-slate-700/50">
-                                            <!-- Color de la barra animada -->
-                                            <div class="bg-gradient-to-r from-red-700 to-red-400 h-full transition-all duration-1000 ease-out relative"
-                                                :style="{ width: getHPStats(debt).percent + '%' }">
-                                                <!-- Efecto de brillo en la barra -->
-                                                <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-[4px]"></div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Detalles tácticos debajo de la barra -->
-                                        <div class="flex justify-between mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                            <span>{{ debt.type === 'loan' ? 'Cuota Fija' : 'Pago Mínimo' }}: <span class="text-white">{{ getSymbol(debt.currency) }} {{ formatMoney(debt.minimum_payment) }}</span></span>
-                                            <span v-if="debt.type === 'credit_card' && debt.cutoff_date">Corte: <span class="text-orange-400">{{ debt.cutoff_date }}</span> | Pago: <span class="text-blue-400">{{ debt.payment_date }}</span></span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Acciones del Combate -->
-                                    <div class="flex justify-between items-center relative z-10 pt-4 border-t border-slate-800">
-                                        <button @click="confirmDelete(debt)"
-                                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1">
-                                            <span>🗑️</span> Abortar
-                                        </button>
-                                        
-                                        <button v-if="debt.balance > 0" @click="openPayModal(debt)"
-                                            class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-transform hover:scale-105 flex items-center gap-2">
-                                            ⚔️ ATACAR
-                                        </button>
-                                        <span v-else
-                                            class="bg-emerald-500/20 text-emerald-400 px-8 py-3 rounded-xl font-black uppercase tracking-widest border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                                            💀 DERROTADO
-                                        </span>
-                                    </div>
-                                </div>
+                                <BossCard
+                                    v-for="(debt, index) in sortedDebts"
+                                    :key="debt.id"
+                                    :debt="debt"
+                                    :index="index"
+                                    :formatMoney="formatMoney"
+                                    :getSymbol="getSymbol"
+                                    :getHPStats="getHPStats"
+                                    @attack="openPayModal"
+                                    @abort="confirmDelete"
+                                />
                             </div>
 
                             <div v-else
-                                class="text-center p-16 border-2 border-dashed border-slate-300 rounded-3xl bg-white mt-6 shadow-sm">
-                                <div class="text-6xl mb-4">🕊️</div>
-                                <h3 class="text-2xl font-black text-slate-900 tracking-tight">Zona Despejada</h3>
-                                <p class="text-slate-500 mt-2 font-medium">No hay jefes enemigos en el radar. Estás en paz financiera o te falta encender el escáner a la izquierda.</p>
+                                class="text-center p-16 border-2 border-dashed border-slate-700/60 rounded-3xl bg-slate-950/30 mt-6">
+                                <div class="text-6xl mb-4 opacity-60">🕊️</div>
+                                <h3 class="text-2xl font-black text-white tracking-tight">Zona Despejada</h3>
+                                <p class="text-slate-400 mt-2 font-medium">No hay jefes enemigos en el radar. Estás en paz financiera o te falta encender el escáner a la izquierda.</p>
                             </div>
 
                         </div>
@@ -482,7 +432,9 @@ const submitPayment = () => {
                     </div>
                     <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="submitPayment"
-                            class="w-full inline-flex justify-center rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] px-6 py-3 bg-red-600 text-sm font-black uppercase tracking-widest text-white hover:bg-red-500 sm:ml-3 sm:w-auto transition-transform hover:scale-105">
+                            :disabled="isSubmitting"
+                            :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                            class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                             💥 Lanzar Ataque
                         </button>
                         <button @click="closePayModal"
@@ -515,7 +467,9 @@ const submitPayment = () => {
                     </div>
                     <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="executeDelete" type="button"
-                            class="w-full inline-flex justify-center rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] px-6 py-3 bg-red-600 text-sm font-black uppercase tracking-widest text-white hover:bg-red-500 sm:ml-3 sm:w-auto transition-colors">
+                            :disabled="isSubmitting"
+                            :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                            class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                             Eliminar del Radar
                         </button>
                         <button @click="closeDeleteModal" type="button"
@@ -527,17 +481,11 @@ const submitPayment = () => {
             </div>
         </div>
 
-        <transition enter-active-class="transform ease-out duration-300 transition"
-            enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-            enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
-            leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100"
-            leave-to-class="opacity-0">
-            <div v-if="notification.show"
-                class="fixed bottom-10 right-10 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white flex items-center gap-3"
-                :class="notification.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'">
-                <span class="text-xl">{{ notification.type === 'success' ? '🎖️' : '⚠️' }}</span>{{ notification.message }}
-            </div>
-        </transition>
+        <CombatLog
+            :show="notification.show"
+            :message="notification.message"
+            :type="notification.type"
+        />
 
     </AuthenticatedLayout>
 </template>

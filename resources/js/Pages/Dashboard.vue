@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { formatCurrency } from '@/utils'; // La nueva herramienta global
@@ -38,6 +39,7 @@ const fixedExpenses = ref([
 const deductDebts = ref(false);
 
 const notification = ref({ show: false, message: '', type: 'success' });
+const isSubmitting = ref(false);
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
     setTimeout(() => { notification.value.show = false; }, 4000);
@@ -135,9 +137,11 @@ const saveBudget = () => {
         }
     };
 
+    isSubmitting.value = true;
     router.post(route('budgets.store'), payload, {
         preserveScroll: true,
-        onSuccess: () => showNotification('¡Presupuesto guardado! Tu capital libre está listo.', 'success')
+        onSuccess: () => showNotification('¡Presupuesto guardado! Tu capital libre está listo.', 'success'),
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 
@@ -181,7 +185,7 @@ const downloadAsCsv = () => {
                     <p class="text-slate-400 text-lg leading-relaxed mb-8">Se acabó el estrés de los números. Aquí tu
                         economía es un campo de batalla, y tú eres el Comandante.</p>
                     <button @click="aceptarMision"
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg py-4 px-8 rounded-xl transition-all transform hover:-translate-y-1 shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+                        class="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] text-lg">
                         Aceptar Misión
                     </button>
                 </div>
@@ -417,11 +421,13 @@ const downloadAsCsv = () => {
 
                             <div class="pt-6 border-t border-slate-800 flex flex-col sm:flex-row gap-4">
                                 <button @click="saveBudget"
-                                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all transform hover:-translate-y-1 shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                                    :disabled="isSubmitting"
+                                    :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                                    class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]">
                                     💾 Guardar Plan
                                 </button>
                                 <button @click="downloadAsCsv"
-                                    class="w-full bg-transparent hover:bg-slate-800 text-slate-300 border border-slate-600 font-bold uppercase tracking-wider py-4 rounded-xl transition-colors">
+                                    class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold uppercase tracking-wider transition-all duration-300 ease-out hover:scale-105 bg-transparent hover:bg-slate-800 text-slate-300 border border-slate-600 hover:border-slate-500">
                                     📊 Extraer Datos
                                 </button>
                             </div>
@@ -524,18 +530,11 @@ const downloadAsCsv = () => {
             </div>
         </div>
 
-        <transition enter-active-class="transform ease-out duration-300 transition"
-            enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-            enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
-            leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100"
-            leave-to-class="opacity-0">
-            <div v-if="notification.show"
-                class="fixed bottom-10 right-10 z-50 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] font-bold text-white flex items-center gap-3 border"
-                :class="notification.type === 'success' ? 'bg-emerald-600 border-emerald-500' : 'bg-red-600 border-red-500'">
-                <span class="text-2xl">{{ notification.type === 'success' ? '🎖️' : '⚠️' }}</span>
-                {{ notification.message }}
-            </div>
-        </transition>
+        <CombatLog
+            :show="notification.show"
+            :message="notification.message"
+            :type="notification.type"
+        />
 
     </AuthenticatedLayout>
 </template>

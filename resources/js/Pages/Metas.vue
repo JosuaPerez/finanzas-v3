@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import CombatLog from '@/Components/CombatLog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
@@ -79,6 +80,7 @@ const showForgeModal = ref(false);
 const showDiscardModal = ref(false);
 const selectedGoal = ref(null);
 const forgeAmount = ref('');
+const isSubmitting = ref(false);
 
 const openForgeModal = (goal) => {
     selectedGoal.value = goal;
@@ -109,22 +111,26 @@ const saveGoal = () => {
         deadline: form.value.deadline || null
     };
 
+    isSubmitting.value = true;
     router.post(route('metas.store'), payload, {
         preserveScroll: true,
         onSuccess: () => {
             form.value = { currency: 'DOP', name: '', target_amount: '', current_amount: '', deadline: '' };
             showNotification('¡Plano añadido a la mesa de forja!', 'success');
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 
 const executeDiscard = () => {
+    isSubmitting.value = true;
     router.delete(route('metas.destroy', selectedGoal.value.id), {
         preserveScroll: true,
         onSuccess: () => {
             showNotification('Plano destruido. Materiales liberados.', 'success');
             closeDiscardModal();
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 
@@ -135,6 +141,7 @@ const submitForge = () => {
         return;
     }
 
+    isSubmitting.value = true;
     router.post(route('metas.add_funds', selectedGoal.value.id), { amount: amount }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -145,7 +152,8 @@ const submitForge = () => {
                 showNotification(`🔨 Has invertido ${formatMoney(amount)} materiales en el proyecto.`, 'success');
             }
             closeForgeModal();
-        }
+        },
+        onFinish: () => { isSubmitting.value = false; }
     });
 };
 </script>
@@ -177,7 +185,9 @@ const submitForge = () => {
 
                     <!-- SECCIÓN IZQUIERDA: CREAR NUEVO PROYECTO -->
                     <div class="lg:col-span-4">
-                        <div class="bg-slate-900 overflow-hidden shadow-2xl sm:rounded-3xl p-6 border border-slate-800 sticky top-6">
+                        <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 border border-slate-700/60 ring-1 ring-white/5 sticky top-6 relative">
+                            <!-- Ambient accent line -->
+                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
                             
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="bg-emerald-500/20 p-2 rounded-xl border border-emerald-500/50">
@@ -240,7 +250,9 @@ const submitForge = () => {
                                 </div>
 
                                 <button @click="saveGoal"
-                                    class="w-full mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest py-4 px-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-1 flex justify-center items-center gap-2">
+                                    :disabled="isSubmitting"
+                                    :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                                    class="w-full mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]">
                                     <span>⚙️</span> Diseñar Plano
                                 </button>
                             </div>
@@ -267,7 +279,7 @@ const submitForge = () => {
                         </div>
 
                         <!-- LISTA DE PROYECTOS -->
-                        <div class="bg-slate-950/50 border border-slate-800 overflow-hidden shadow-sm sm:rounded-3xl p-6 md:p-8">
+                        <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 relative">
                             
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-slate-800/50">
                                 <h2 class="text-2xl font-black text-white flex items-center gap-3 tracking-tight">
@@ -340,7 +352,7 @@ const submitForge = () => {
                                         </button>
                                         
                                         <button v-if="!getForgeStats(goal).isCompleted" @click="openForgeModal(goal)"
-                                            class="bg-slate-800 hover:bg-emerald-600 border border-slate-600 hover:border-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
+                                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                                             <span>➕</span> Invertir
                                         </button>
                                         <span v-else
@@ -400,7 +412,9 @@ const submitForge = () => {
                     </div>
                     <div class="bg-slate-950 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-800">
                         <button @click="submitForge"
-                            class="w-full inline-flex justify-center items-center gap-2 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] px-6 py-3 bg-emerald-600 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-transform hover:scale-105">
+                            :disabled="isSubmitting"
+                            :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                            class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]">
                             <span>🔨</span> Inyectar
                         </button>
                         <button @click="closeForgeModal"
@@ -433,7 +447,9 @@ const submitForge = () => {
                     </div>
                     <div class="bg-slate-950 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-800">
                         <button @click="executeDiscard" type="button"
-                            class="w-full inline-flex justify-center rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.3)] px-6 py-3 bg-red-600/90 border border-red-500 text-xs font-black uppercase tracking-widest text-white hover:bg-red-500 sm:ml-3 sm:w-auto transition-colors">
+                            :disabled="isSubmitting"
+                            :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                            class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                             Destruir
                         </button>
                         <button @click="closeDiscardModal" type="button"
@@ -445,19 +461,11 @@ const submitForge = () => {
             </div>
         </div>
 
-        <!-- NOTIFICACIONES -->
-        <transition enter-active-class="transform ease-out duration-300 transition"
-            enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-            enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
-            leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100"
-            leave-to-class="opacity-0">
-            <div v-if="notification.show"
-                class="fixed bottom-10 right-10 z-50 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] font-bold text-white flex items-center gap-3 border"
-                :class="notification.type === 'success' ? 'bg-emerald-600 border-emerald-500' : 'bg-red-600 border-red-500'">
-                <span class="text-2xl">{{ notification.type === 'success' ? '🎖️' : '⚠️' }}</span>
-                {{ notification.message }}
-            </div>
-        </transition>
+        <CombatLog
+            :show="notification.show"
+            :message="notification.message"
+            :type="notification.type"
+        />
 
     </AuthenticatedLayout>
 </template>
