@@ -3,6 +3,7 @@
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoalController;
 use App\Models\Budget;
 use App\Models\Debt;
 use Illuminate\Support\Facades\Route;
@@ -52,9 +53,15 @@ Route::post('/deudas', [DebtController::class, 'store'])->middleware(['auth', 'v
 Route::post('/deudas/{debt}/pagar', [DebtController::class, 'pay'])->middleware(['auth', 'verified'])->name('debts.pay');
 Route::delete('/deudas/{debt}', [DebtController::class, 'destroy'])->middleware(['auth', 'verified'])->name('debts.destroy');
 
-Route::get('/metas', function () {
-    return Inertia::render('Metas');
-})->middleware(['auth', 'verified'])->name('metas');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Ruta para ver las metas
+    Route::get('/metas', [GoalController::class, 'index'])->name('metas');
+    
+    // Rutas para las acciones (POST, DELETE)
+    Route::post('/metas', [GoalController::class, 'store'])->name('metas.store');
+    Route::delete('/metas/{goal}', [GoalController::class, 'destroy'])->name('metas.destroy');
+    Route::post('/metas/{goal}/add-funds', [GoalController::class, 'addFunds'])->name('metas.add_funds');
+});
 
 Route::post('/presupuestos', [BudgetController::class, 'store'])->middleware(['auth', 'verified'])->name('budgets.store');
 

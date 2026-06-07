@@ -5,10 +5,8 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import { Link } from '@inertiajs/vue3';
 
-// Controla si el menú lateral está abierto en móviles
 const isSidebarOpen = ref(false);
 
-// Evitar que el usuario haga scroll en la página de fondo cuando el menú está abierto
 const toggleBodyScroll = () => {
     if (isSidebarOpen.value) {
         document.body.style.overflow = 'hidden';
@@ -30,37 +28,37 @@ const openSidebar = () => {
 
 <template>
     <div>
-        <div class="min-h-screen bg-slate-50">
-            <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+        <div class="min-h-screen bg-slate-950 font-sans text-slate-300">
+            <!-- <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex h-16 justify-between items-center">
                         
                         <div class="flex items-center gap-8">
                             <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')" class="flex items-center gap-2">
-                                    <span class="text-2xl">⚔️</span>
+                                <Link :href="route('dashboard')" class="flex items-center gap-2 group">
+                                    <span class="text-2xl group-hover:scale-110 transition-transform">⚔️</span>
                                     <span class="text-white font-black tracking-tight hidden sm:block">Finanzas de Combate</span>
                                 </Link>
                             </div>
 
                             <div class="hidden sm:flex space-x-2">
                                 <Link :href="route('dashboard')" 
-                                      :class="route().current('dashboard') ? 'bg-slate-800 text-white shadow-inner' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                                      :class="route().current('dashboard') ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                                       class="px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
                                     🛡️ Presupuesto
                                 </Link>
                                 <Link :href="route('deudas')" 
-                                      :class="route().current('deudas') ? 'bg-slate-800 text-white shadow-inner' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                                      :class="route().current('deudas') ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                                       class="px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
                                     🔥 Deudas
                                 </Link>
                                 <Link :href="route('metas')" 
-                                      :class="route().current('metas') ? 'bg-slate-800 text-white shadow-inner' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                                      :class="route().current('metas') ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                                       class="px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
                                     🎯 Metas
                                 </Link>
                                 <Link :href="route('historial')" 
-                                      :class="route().current('historial') ? 'bg-slate-800 text-white shadow-inner' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                                      :class="route().current('historial') ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                                       class="px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
                                     🗂️ Historial
                                 </Link>
@@ -84,8 +82,8 @@ const openSidebar = () => {
                                         </template>
 
                                         <template #content>
-                                            <DropdownLink :href="route('profile.edit')">Perfil de Soldado</DropdownLink>
-                                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-red-600 font-bold hover:bg-red-50">Abandonar Base</DropdownLink>
+                                            <DropdownLink :href="route('profile.edit')">⚙️ Perfil de Soldado</DropdownLink>
+                                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-red-600 font-bold hover:bg-red-50">🚪 Abandonar Base</DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -102,14 +100,14 @@ const openSidebar = () => {
                         </div>
                     </div>
                 </div>
-            </nav>
+            </nav> -->
 
             <transition 
                 enter-active-class="transition-opacity ease-linear duration-300" 
                 enter-from-class="opacity-0" enter-to-class="opacity-100" 
                 leave-active-class="transition-opacity ease-linear duration-300" 
                 leave-from-class="opacity-100" leave-to-class="opacity-0">
-                <div v-if="isSidebarOpen" @click="closeSidebar" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 sm:hidden"></div>
+                <div v-if="isSidebarOpen" @click="closeSidebar" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 sm:hidden"></div>
             </transition>
 
             <transition 
@@ -132,29 +130,29 @@ const openSidebar = () => {
                         </button>
                     </div>
 
-                    <div class="px-6 py-6 bg-slate-800/50">
+                    <div class="px-6 py-6 bg-slate-800/30">
                         <div class="text-lg font-bold text-white">{{ $page.props.auth.user.name }}</div>
                         <div class="text-sm font-medium text-slate-400">{{ $page.props.auth.user.email }}</div>
                     </div>
 
                     <div class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                         <Link :href="route('dashboard')" @click="closeSidebar"
-                              :class="route().current('dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                              :class="route().current('dashboard') ? 'bg-blue-600/20 border border-blue-500/50 text-blue-400 shadow-inner' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                               class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all">
                             <span class="text-xl">🛡️</span> Presupuesto
                         </Link>
                         <Link :href="route('deudas')" @click="closeSidebar"
-                              :class="route().current('deudas') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                              :class="route().current('deudas') ? 'bg-blue-600/20 border border-blue-500/50 text-blue-400 shadow-inner' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                               class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all">
                             <span class="text-xl">🔥</span> Deudas
                         </Link>
                         <Link :href="route('metas')" @click="closeSidebar"
-                              :class="route().current('metas') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                              :class="route().current('metas') ? 'bg-blue-600/20 border border-blue-500/50 text-blue-400 shadow-inner' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                               class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all">
                             <span class="text-xl">🎯</span> Metas
                         </Link>
                         <Link :href="route('historial')" @click="closeSidebar"
-                              :class="route().current('historial') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+                              :class="route().current('historial') ? 'bg-blue-600/20 border border-blue-500/50 text-blue-400 shadow-inner' : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'"
                               class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all">
                             <span class="text-xl">🗂️</span> Historial
                         </Link>
@@ -173,8 +171,8 @@ const openSidebar = () => {
                 </div>
             </transition>
 
-            <header class="bg-white shadow-sm border-b border-gray-200" v-if="$slots.header">
-                <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+            <header class="bg-slate-900 shadow-md border-b border-slate-800" v-if="$slots.header">
+                <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 text-white">
                     <slot name="header" />
                 </div>
             </header>

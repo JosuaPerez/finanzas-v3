@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
 const props = defineProps({
@@ -34,34 +34,18 @@ const showNotification = (message, type = 'success') => {
 const vMoney = {
     mounted: (el) => {
         el.addEventListener('input', (e) => {
-            // Si el evento fue disparado por nuestro propio código, lo ignoramos para evitar bucles
             if (!e.isTrusted) return;
-
-            // 1. Guardamos la posición exacta del cursor
             let cursorPosition = el.selectionStart;
             let oldLength = el.value.length;
-
-            // 2. Limpiamos todo el texto: dejamos solo números y puntos decimales
             let val = el.value.replace(/[^\d.]/g, '');
-            
-            // 3. Separamos los decimales (por si el usuario escribe un punto)
             let parts = val.split('.');
-            
-            // 4. Agregamos las comas automáticamente a la parte de los miles
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            
-            // Volvemos a unir los enteros con los decimales
             let formatted = parts.join('.');
 
-            // 5. Aplicamos el formato al instante
             if (el.value !== formatted) {
                 el.value = formatted;
-
-                // 6. Magia táctica: Ajustamos el cursor para que no salte al final al aparecer la coma
                 cursorPosition += (formatted.length - oldLength);
                 el.setSelectionRange(cursorPosition, cursorPosition);
-
-                // 7. Le avisamos a Vue (v-model) que actualice sus cálculos internos
                 el.dispatchEvent(new Event('input'));
             }
         });
@@ -72,6 +56,31 @@ const cleanNum = (val) => {
     if (val === null || val === undefined || val === '') return 0;
     return parseFloat(String(val).replace(/,/g, '')) || 0;
 };
+
+// --- LÓGICA DE GAMIFICACIÓN (HP BARS) ---
+const getHPStats = (debt) => {
+    let maxHP = debt.balance; // Por defecto, la vida máxima es lo que debe actualmente
+
+    if (debt.type === 'loan' && debt.original_amount > 0) {
+        maxHP = debt.original_amount; // En préstamos, la vida máxima es el monto original
+    } else if (debt.type === 'credit_card' && debt.credit_limit > 0) {
+        // En tarjetas, la vida máxima es el límite + sobregiro
+        maxHP = debt.credit_limit + (debt.credit_limit * ((debt.overdraft_percentage || 0) / 100));
+    }
+
+    // Si por los intereses la deuda superó el límite original, ajustamos para que no rompa la barra
+    if (debt.balance > maxHP) maxHP = debt.balance;
+
+    let percent = maxHP > 0 ? (debt.balance / maxHP) * 100 : 100;
+    
+    return {
+        current: debt.balance,
+        max: maxHP,
+        percent: percent > 100 ? 100 : percent,
+        isCritical: percent > 80 // Si le queda más del 80% de vida, es una amenaza crítica
+    };
+};
+// -----------------------------------------
 
 const strategy = ref('avalanche');
 const sortedDebts = computed(() => {
@@ -84,7 +93,6 @@ const showDeleteModal = ref(false);
 const selectedDebt = ref(null);
 const paymentAmount = ref('');
 
-// Poner la cuota mínima como predeterminada
 const openPayModal = (debt) => {
     selectedDebt.value = debt;
     paymentAmount.value = debt.minimum_payment ? debt.minimum_payment.toString() : '';
@@ -123,7 +131,7 @@ const saveDebt = () => {
         preserveScroll: true,
         onSuccess: () => {
             form.value = { type: 'loan', currency: 'DOP', name: '', balance: '', interest_rate: '', minimum_payment: '', credit_limit: '', cutoff_date: '', payment_date: '', original_amount: '', overdraft_percentage: '' };
-            showNotification('Enemigo registrado en el radar.', 'success');
+            showNotification('¡Nuevo enemigo detectado en el radar!', 'success');
         }
     });
 };
@@ -132,7 +140,7 @@ const executeDelete = () => {
     router.delete(route('debts.destroy', selectedDebt.value.id), {
         preserveScroll: true,
         onSuccess: () => {
-            showNotification('Enemigo eliminado del campo de batalla.', 'success');
+            showNotification('Enemigo aniquilado y borrado de los registros.', 'success');
             closeDeleteModal();
         }
     });
@@ -141,7 +149,7 @@ const executeDelete = () => {
 const submitPayment = () => {
     const amount = cleanNum(paymentAmount.value);
     if (!amount || amount <= 0) {
-        showNotification("Ingresa un monto válido.", "error");
+        showNotification("Ingresa un monto válido para atacar.", "error");
         return;
     }
 
@@ -149,133 +157,123 @@ const submitPayment = () => {
         preserveScroll: true,
         onSuccess: () => {
             if (selectedDebt.value.balance - amount <= 0) {
-                showNotification('¡ENEMIGO DESTRUIDO! Has saldado esta deuda.', 'success');
+                showNotification('¡GOLPE FINAL! El jefe ha sido destruido.', 'success');
             } else {
-                showNotification('¡Impacto directo! El saldo y tu capital han disminuido.', 'success');
+                showNotification(`¡Impacto Crítico! Le quitaste ${formatMoney(amount)} de HP.`, 'success');
             }
             closePayModal();
         }
     });
 };
-
-const getCreditUtilization = (balance, limit, overdraftPercent) => {
-    if (!limit || limit <= 0) return { percent: 0, isOverdrafted: false, maxLimit: 0 };
-    const maxLimit = limit + (limit * ((overdraftPercent || 0) / 100));
-    const percent = (balance / maxLimit) * 100;
-    return { percent: percent > 100 ? 100 : percent, isOverdrafted: balance > limit, maxLimit: maxLimit };
-};
-
-const getLoanProgress = (balance, original) => {
-    if (!original || original <= 0) return 0;
-    const paid = original - balance;
-    if (paid < 0) return 0;
-    const percent = (paid / original) * 100;
-    return percent > 100 ? 100 : percent;
-};
 </script>
 
 <template>
-
     <Head title="Modo Guerra - Deudas" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">🔥 Plan de Deudas (Modo Guerra)</h2>
+            <div class="flex items-center justify-between w-full">
+                <h2 class="font-black text-lg sm:text-2xl text-white uppercase tracking-widest flex items-center gap-2">
+                    🔥 Plan de Deudas
+                </h2>
+                
+                <Link :href="route('dashboard')" 
+                      class="shrink-0 flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-700 hover:border-blue-500/50 text-slate-300 hover:text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-lg hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] group">
+                    <span class="text-lg sm:text-xl group-hover:-translate-x-1 transition-transform">❮</span>
+                    <div class="flex-col text-left leading-none hidden sm:flex">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Comando</span>
+                        <span class="text-xs font-bold uppercase tracking-tight">Retornar a Base</span>
+                    </div>
+                </Link>
+            </div>
         </template>
 
         <div class="py-12 relative">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
+                    <!-- SECCIÓN IZQUIERDA: RADAR / AÑADIR ENEMIGO -->
                     <div class="lg:col-span-4">
-                        <div
-                            class="bg-white overflow-hidden shadow-sm sm:rounded-xl p-6 border-t-4 border-red-500 sticky top-6">
-                            <h3 class="text-xl font-extrabold text-gray-900 mb-2">Añadir Enemigo</h3>
-
-                            <div class="flex gap-2 mt-4 mb-4">
-                                <div class="flex p-1 bg-gray-100 rounded-lg w-2/3">
-                                    <button @click="form.type = 'loan'" type="button"
-                                        :class="form.type === 'loan' ? 'bg-white shadow-sm text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-700'"
-                                        class="w-1/2 py-2 text-xs rounded-md transition-all">🏦 Préstamo</button>
-                                    <button @click="form.type = 'credit_card'" type="button"
-                                        :class="form.type === 'credit_card' ? 'bg-white shadow-sm text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-700'"
-                                        class="w-1/2 py-2 text-xs rounded-md transition-all">💳 Tarjeta</button>
+                        <div class="bg-slate-900 overflow-hidden shadow-2xl sm:rounded-2xl p-6 border border-slate-800 sticky top-6">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="relative flex h-3 w-3">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                                 </div>
-                                <div class="flex p-1 bg-gray-100 rounded-lg w-1/3">
+                                <h3 class="text-xl font-black text-white tracking-wide uppercase">Radar de Enemigos</h3>
+                            </div>
+
+                            <div class="flex gap-2 mb-6">
+                                <div class="flex p-1 bg-slate-800 rounded-lg w-2/3 border border-slate-700">
+                                    <button @click="form.type = 'loan'" type="button"
+                                        :class="form.type === 'loan' ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-slate-400 hover:text-white'"
+                                        class="w-1/2 py-2 text-xs rounded-md transition-all">👹 Préstamo</button>
+                                    <button @click="form.type = 'credit_card'" type="button"
+                                        :class="form.type === 'credit_card' ? 'bg-orange-600 text-white font-bold shadow-md' : 'text-slate-400 hover:text-white'"
+                                        class="w-1/2 py-2 text-xs rounded-md transition-all">👾 Tarjeta</button>
+                                </div>
+                                <div class="flex p-1 bg-slate-800 rounded-lg w-1/3 border border-slate-700">
                                     <button @click="form.currency = 'DOP'" type="button"
-                                        :class="form.currency === 'DOP' ? 'bg-blue-100 text-blue-800 font-bold' : 'text-gray-500 hover:text-gray-700'"
+                                        :class="form.currency === 'DOP' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
                                         class="w-1/2 py-2 text-xs rounded-md transition-all">RD$</button>
                                     <button @click="form.currency = 'USD'" type="button"
-                                        :class="form.currency === 'USD' ? 'bg-green-100 text-green-800 font-bold' : 'text-gray-500 hover:text-gray-700'"
+                                        :class="form.currency === 'USD' ? 'bg-green-700 text-white font-bold' : 'text-slate-400 hover:text-white'"
                                         class="w-1/2 py-2 text-xs rounded-md transition-all">US$</button>
                                 </div>
                             </div>
 
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">Nombre</label>
+                                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Identificación del Objetivo</label>
                                     <input type="text" v-model="form.name"
-                                        class="w-full rounded-lg border-gray-300 focus:ring-red-500"
-                                        :placeholder="form.type === 'loan' ? 'Ej. Préstamo Vehículo' : 'Ej. Visa (Dólares)'">
+                                        class="w-full bg-slate-800 text-white rounded-lg border-slate-700 focus:ring-red-500 focus:border-red-500 placeholder-slate-500"
+                                        :placeholder="form.type === 'loan' ? 'Ej. El Ogro del Banco' : 'Ej. La Bestia Visa'">
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">
-                                        {{ form.type === 'loan' ? 'SaldoActual (Restante)' : 'Deuda Actual (Consumido)' }}
+                                    <label class="block text-xs font-bold text-red-400 mb-1 uppercase tracking-wider">
+                                        {{ form.type === 'loan' ? 'Puntos de Vida (HP Actual)' : 'Daño Recibido (Deuda Actual)' }}
                                     </label>
                                     <div class="relative rounded-md shadow-sm">
-                                        <div
-                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 font-bold">{{ getSymbol(form.currency) }}</span>
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-slate-400 font-bold">{{ getSymbol(form.currency) }}</span>
                                         </div>
                                         <input type="text" v-model="form.balance" v-money
-                                            class="w-full rounded-lg border-gray-300 pl-14 focus:ring-red-500"
+                                            class="w-full bg-slate-800 text-white rounded-lg border-red-900 pl-12 focus:ring-red-500 focus:border-red-500 placeholder-slate-600 font-mono"
                                             placeholder="0.00">
                                     </div>
                                 </div>
 
-                                <div v-if="form.type === 'loan'"
-                                    class="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                                    <label class="block text-sm font-bold text-blue-900 mb-1">Monto Original
-                                        Prestado</label>
+                                <div v-if="form.type === 'loan'" class="p-4 bg-slate-800/50 border border-blue-900/50 rounded-xl">
+                                    <label class="block text-xs font-bold text-blue-400 mb-1 uppercase tracking-wider">Vida Máxima (Monto Original)</label>
                                     <div class="relative rounded-md shadow-sm">
-                                        <div
-                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <span class="text-blue-500 font-bold">{{ getSymbol(form.currency) }}</span>
                                         </div>
                                         <input type="text" v-model="form.original_amount" v-money
-                                            class="w-full rounded-lg border-blue-200 pl-14 focus:ring-blue-500 bg-white"
+                                            class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-blue-500 font-mono"
                                             placeholder="0.00">
                                     </div>
                                 </div>
 
-                                <div v-if="form.type === 'credit_card'"
-                                    class="p-4 bg-orange-50 border border-orange-100 rounded-xl space-y-4">
+                                <div v-if="form.type === 'credit_card'" class="p-4 bg-slate-800/50 border border-orange-900/50 rounded-xl space-y-4">
                                     <div class="grid grid-cols-3 gap-2">
                                         <div class="col-span-2">
-                                            <label class="block text-xs font-bold text-orange-900 mb-1">Límite
-                                                Aprobado</label>
+                                            <label class="block text-[10px] font-bold text-orange-400 mb-1 uppercase tracking-wider">Límite Aprobado (Max HP)</label>
                                             <div class="relative rounded-md shadow-sm">
-                                                <div
-                                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <span class="text-orange-500 font-bold">
-                                                        {{ getSymbol(form.currency) }}
-                                                    </span>
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <span class="text-orange-500 font-bold">{{ getSymbol(form.currency) }}</span>
                                                 </div>
                                                 <input type="text" v-model="form.credit_limit" v-money
-                                                    class="w-full rounded-lg border-orange-200 pl-12 focus:ring-orange-500 bg-white"
-                                                    placeholder="0.00">
+                                                    class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-orange-500 font-mono" placeholder="0.00">
                                             </div>
                                         </div>
                                         <div class="col-span-1">
-                                            <label class="block text-xs font-bold text-orange-900 mb-1">%
-                                                Sobregiro</label>
+                                            <label class="block text-[10px] font-bold text-orange-400 mb-1 uppercase tracking-wider">% Sobregiro</label>
                                             <div class="relative rounded-md shadow-sm">
                                                 <input type="number" v-model="form.overdraft_percentage"
-                                                    class="w-full rounded-lg border-orange-200 pr-6 focus:ring-orange-500 bg-white"
-                                                    placeholder="10">
-                                                <div
-                                                    class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                                                    class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pr-6 focus:ring-orange-500 font-mono" placeholder="10">
+                                                <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
                                                     <span class="text-orange-500 font-bold">%</span>
                                                 </div>
                                             </div>
@@ -283,203 +281,165 @@ const getLoanProgress = (balance, original) => {
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-xs font-bold text-orange-900 mb-1">Día de
-                                                Corte</label>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Día de Corte</label>
                                             <input type="number" v-model="form.cutoff_date" min="1" max="31"
-                                                class="w-full rounded-lg border-orange-200 focus:ring-orange-500"
-                                                placeholder="Ej: 15">
+                                                class="w-full bg-slate-900 text-white rounded-lg border-slate-700 focus:ring-orange-500 font-mono" placeholder="Ej: 15">
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-bold text-orange-900 mb-1">Día de
-                                                Pago</label>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Día de Pago</label>
                                             <input type="number" v-model="form.payment_date" min="1" max="31"
-                                                class="w-full rounded-lg border-orange-200 focus:ring-orange-500"
-                                                placeholder="Ej: 5">
+                                                class="w-full bg-slate-900 text-white rounded-lg border-slate-700 focus:ring-orange-500 font-mono" placeholder="Ej: 5">
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-1">Tasa Interés</label>
+                                        <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Tasa Interés (Ataque Enemigo)</label>
                                         <div class="relative rounded-md shadow-sm">
                                             <input type="number" v-model="form.interest_rate"
-                                                class="w-full rounded-lg border-gray-300 pr-8 focus:ring-red-500"
-                                                placeholder="0">
-                                            <div
-                                                class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 font-bold">%</span>
+                                                class="w-full bg-slate-800 text-white rounded-lg border-slate-700 pr-8 focus:ring-red-500 font-mono" placeholder="0">
+                                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <span class="text-slate-500 font-bold">%</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-1">
+                                        <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">
                                             {{ form.type ==='loan' ?'Cuota Fija' : 'Pago Mínimo' }}
                                         </label>
                                         <input type="text" v-model="form.minimum_payment" v-money
-                                            class="w-full rounded-lg border-gray-300 focus:ring-red-500"
-                                            placeholder="0.00">
+                                            class="w-full bg-slate-800 text-white rounded-lg border-slate-700 focus:ring-red-500 font-mono" placeholder="0.00">
                                     </div>
                                 </div>
                                 <button @click="saveDebt"
-                                    class="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">+
-                                    Registrar Enemigo</button>
+                                    class="w-full mt-6 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-4 px-4 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all transform hover:-translate-y-1">
+                                    Fijar Objetivo
+                                </button>
                             </div>
                         </div>
                     </div>
 
+                    <!-- SECCIÓN DERECHA: CAMPO DE BATALLA -->
                     <div class="lg:col-span-8">
 
+                        <!-- HUD: Municiones -->
                         <div v-if="ammunition > 0"
-                            class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-center shadow-sm">
-                            <div class="flex items-center gap-4 mb-3 sm:mb-0">
-                                <div class="bg-blue-200 p-3 rounded-full text-2xl">💰</div>
+                            class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+                            <div class="flex items-center gap-4 mb-3 sm:mb-0 relative z-10">
+                                <div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/50 text-2xl shadow-[0_0_15px_rgba(37,99,235,0.4)]">🔋</div>
                                 <div>
-                                    <h3 class="text-blue-900 font-extrabold text-sm uppercase tracking-wider">Municiones
-                                        Listas
-                                    </h3>
-                                    <p class="text-blue-700 text-xs font-medium">Capital libre desde tu último
-                                        presupuesto</p>
+                                    <h3 class="text-blue-400 font-black text-sm uppercase tracking-widest">Munición Disponible</h3>
+                                    <p class="text-slate-400 text-xs font-medium">Capital listo para disparar</p>
                                 </div>
                             </div>
-                            <div
-                                class="text-center sm:text-right w-full sm:w-auto bg-white px-5 py-2 rounded-lg border border-blue-100 shadow-inner">
-                                <span class="text-2xl font-black text-blue-800">RD$ {{ formatMoney(ammunition) }}</span>
+                            <div class="text-center sm:text-right w-full sm:w-auto bg-slate-950 px-6 py-3 rounded-xl border border-slate-800 shadow-inner relative z-10">
+                                <span class="text-3xl font-black text-white font-mono tracking-tight">RD$ {{ formatMoney(ammunition) }}</span>
                             </div>
                         </div>
 
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl p-6 md:p-8">
-
-                            <div
-                                class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-gray-100 pb-4">
-                                <h2 class="text-2xl font-extrabold text-gray-900 flex items-center gap-2">⚔️ Campo de
-                                    Batalla
+                        <!-- LISTA DE JEFES -->
+                        <div class="bg-slate-50 overflow-hidden shadow-sm sm:rounded-2xl p-6 md:p-8">
+                            
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4">
+                                <h2 class="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
+                                    ⚔️ Zona de Combate
                                 </h2>
-                                <div v-if="debts && debts.length > 1"
-                                    class="flex bg-gray-50 p-1 rounded-lg border border-gray-200 mt-3 sm:mt-0">
+                                <div v-if="debts && debts.length > 1" class="flex bg-slate-200 p-1 rounded-lg mt-3 sm:mt-0">
                                     <button @click="strategy = 'avalanche'"
-                                        :class="strategy === 'avalanche' ? 'bg-white shadow-sm font-bold text-gray-900' : 'text-gray-500 hover:text-gray-700'"
-                                        class="px-3 py-1 rounded-md text-xs transition-all">🌋 Avalancha</button>
+                                        :class="strategy === 'avalanche' ? 'bg-slate-900 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-800'"
+                                        class="px-4 py-2 rounded-md text-xs transition-all uppercase tracking-wider">🌋 Avalancha</button>
                                     <button @click="strategy = 'snowball'"
-                                        :class="strategy === 'snowball' ? 'bg-white shadow-sm font-bold text-gray-900' : 'text-gray-500 hover:text-gray-700'"
-                                        class="px-3 py-1 rounded-md text-xs transition-all">⛄ Bola Nieve</button>
+                                        :class="strategy === 'snowball' ? 'bg-slate-900 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-800'"
+                                        class="px-4 py-2 rounded-md text-xs transition-all uppercase tracking-wider">⛄ Bola Nieve</button>
                                 </div>
                             </div>
 
-                            <div v-if="debts && debts.length > 0" class="space-y-5 mt-4">
+                            <div v-if="debts && debts.length > 0" class="space-y-6">
+                                
+                                <!-- TARJETA DE ENEMIGO (JEFE) -->
                                 <div v-for="(debt, index) in sortedDebts" :key="debt.id"
-                                    class="p-5 border border-red-100 rounded-xl flex flex-col hover:shadow-md transition-shadow relative"
-                                    :class="[debt.type === 'credit_card' ? 'bg-white' : 'bg-slate-50', { 'ring-2 ring-yellow-400': index === 0 && debt.balance > 0 }]">
+                                    class="p-6 md:p-8 bg-slate-900 rounded-3xl flex flex-col relative overflow-hidden group shadow-2xl transition-all transform hover:-translate-y-1 border border-slate-800"
+                                    :class="{ 'ring-2 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]': index === 0 && debt.balance > 0 }">
+
+                                    <!-- Luces de Alarma para el objetivo principal -->
+                                    <div v-if="index === 0 && debt.balance > 0" class="absolute top-0 right-0 w-64 h-64 bg-red-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none animate-pulse"></div>
 
                                     <div v-if="index === 0 && debt.balance > 0"
-                                        class="absolute -top-3 right-4 bg-yellow-400 text-yellow-900 font-extrabold px-3 py-1 rounded-full text-[10px] shadow-sm uppercase tracking-wide">
-                                        Objetivo Principal</div>
+                                        class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-red-600 text-white font-black px-6 py-1 rounded-b-xl text-xs shadow-md uppercase tracking-widest z-10">
+                                        Objetivo Prioritario
+                                    </div>
 
-                                    <div
-                                        class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div class="w-full md:w-auto">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-xl">{{ debt.type === 'credit_card' ? '💳' : '🏦'
-                                                    }}</span>
-                                                <h3 class="font-bold text-lg text-gray-900">{{ debt.name }}</h3>
-                                                <span
-                                                    :class="debt.currency === 'USD' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
-                                                    class="text-[10px] font-black px-2 py-0.5 rounded ml-2">{{
-                                                    debt.currency
-                                                    }}</span>
+                                    <!-- Cabecera del Jefe -->
+                                    <div class="flex justify-between items-start mb-6 relative z-10 mt-2">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner border"
+                                                 :class="debt.type === 'credit_card' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' : 'bg-blue-500/20 border-blue-500/50 text-blue-400'">
+                                                {{ debt.type === 'credit_card' ? '👾' : '👹' }}
                                             </div>
-                                            <div class="flex gap-4 mt-2 text-sm flex-wrap">
-                                                <span class="text-red-700 bg-red-100 px-2 py-1 rounded font-semibold">{{
-                                                    debt.interest_rate }}% Interés</span>
-                                                <span class="text-gray-700 bg-gray-200 px-2 py-1 rounded font-medium">{{
-                                                    debt.type === 'loan' ? 'Cuota: ' : 'Mínimo: ' }} {{
-                                                    getSymbol(debt.currency)
-                                                    }} {{ formatMoney(debt.minimum_payment) }}</span>
-                                                <span v-if="debt.type === 'credit_card' && debt.cutoff_date"
-                                                    class="text-orange-700 bg-orange-100 px-2 py-1 rounded font-medium flex items-center gap-1">✂️
-                                                    Corte: {{ debt.cutoff_date }}</span>
-                                                <span v-if="debt.type === 'credit_card' && debt.payment_date"
-                                                    class="text-blue-700 bg-blue-100 px-2 py-1 rounded font-medium flex items-center gap-1">⏳
-                                                    Pago: {{ debt.payment_date }}</span>
-                                            </div>
-
-                                            <div v-if="debt.type === 'credit_card' && debt.credit_limit > 0"
-                                                class="mt-4 w-full md:w-80">
-                                                <div class="flex justify-between text-xs font-bold mb-1">
-                                                    <span class="text-gray-500">Uso del Límite</span>
-                                                    <span
-                                                        v-if="getCreditUtilization(debt.balance, debt.credit_limit, debt.overdraft_percentage).isOverdrafted"
-                                                        class="text-red-600 animate-pulse">¡SOBREGIRO!</span>
-                                                    <span
-                                                        :class="getCreditUtilization(debt.balance, debt.credit_limit, debt.overdraft_percentage).percent > 80 ? 'text-red-600' : 'text-gray-700'">
-                                                        {{ getCreditUtilization(debt.balance, debt.credit_limit,
-                                                        debt.overdraft_percentage).percent.toFixed(1) }}%
-                                                    </span>
-                                                </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div :class="getCreditUtilization(debt.balance, debt.credit_limit, debt.overdraft_percentage).isOverdrafted ? 'bg-red-600' : 'bg-blue-600'"
-                                                        class="h-2 rounded-full transition-all duration-500"
-                                                        :style="{ width: getCreditUtilization(debt.balance, debt.credit_limit, debt.overdraft_percentage).percent + '%' }">
-                                                    </div>
+                                            <div>
+                                                <h3 class="font-black text-2xl text-white tracking-tight">{{ debt.name }}</h3>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700">LVL. {{ debt.interest_rate }} (Interés)</span>
+                                                    <span :class="debt.currency === 'USD' ? 'text-green-400 bg-green-400/10 border-green-400/30' : 'text-blue-400 bg-blue-400/10 border-blue-400/30'"
+                                                          class="text-xs font-black px-2 py-1 rounded-md border">{{ debt.currency }}</span>
                                                 </div>
                                             </div>
-
-                                            <div v-if="debt.type === 'loan' && debt.original_amount > 0"
-                                                class="mt-4 w-full md:w-80">
-                                                <div class="flex justify-between text-xs font-bold mb-1">
-                                                    <span class="text-gray-500">Progreso de Pago</span>
-                                                    <span class="text-green-600">{{ getLoanProgress(debt.balance,
-                                                        debt.original_amount).toFixed(1) }}% Pagado</span>
-                                                </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
-                                                        :style="{ width: getLoanProgress(debt.balance, debt.original_amount) + '%' }">
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                        <div class="w-full md:w-auto text-left md:text-right bg-white p-4 rounded-xl border shadow-sm mt-4 md:mt-0"
-                                            :class="debt.type === 'loan' ? 'border-gray-200' : 'border-red-100'">
-                                            <span
-                                                class="block text-xs font-bold text-gray-400 uppercase tracking-wide">Deuda
-                                                Actual</span>
-                                            <span class="text-2xl font-black text-red-600">{{ getSymbol(debt.currency)
-                                                }} {{
-                                                formatMoney(debt.balance) }}</span>
-                                            <span v-if="debt.type === 'credit_card' && debt.credit_limit > 0"
-                                                class="block text-[10px] text-gray-400 font-bold mt-1 uppercase">Límite
-                                                Max: {{
-                                                getSymbol(debt.currency) }} {{
-                                                    formatMoney(getCreditUtilization(debt.balance,
-                                                debt.credit_limit, debt.overdraft_percentage).maxLimit) }}</span>
-                                            <span v-if="debt.type === 'loan' && debt.original_amount > 0"
-                                                class="block text-[10px] text-gray-400 font-bold mt-1 uppercase">De {{
-                                                getSymbol(debt.currency) }} {{ formatMoney(debt.original_amount) }}
-                                                Original</span>
                                         </div>
                                     </div>
-                                    <div class="mt-5 pt-4 border-t border-gray-100 flex justify-end gap-3">
+
+                                    <!-- BARRA DE VIDA (HP) -->
+                                    <div class="mb-6 bg-slate-950 p-4 rounded-2xl border border-slate-800 relative z-10 shadow-inner">
+                                        <div class="flex justify-between items-end mb-2">
+                                            <span class="text-red-500 font-black tracking-widest text-xs uppercase flex items-center gap-2">
+                                                HP del Jefe
+                                                <span v-if="getHPStats(debt).isCritical" class="animate-pulse text-red-400 text-[10px] border border-red-500/50 bg-red-500/20 px-1 rounded">¡CRÍTICO!</span>
+                                            </span>
+                                            <span class="text-white font-mono font-bold text-sm">
+                                                {{ formatMoney(getHPStats(debt).current) }} <span class="text-slate-500">/ {{ formatMoney(getHPStats(debt).max) }}</span>
+                                            </span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 rounded-full h-4 overflow-hidden relative border border-slate-700/50">
+                                            <!-- Color de la barra animada -->
+                                            <div class="bg-gradient-to-r from-red-700 to-red-400 h-full transition-all duration-1000 ease-out relative"
+                                                :style="{ width: getHPStats(debt).percent + '%' }">
+                                                <!-- Efecto de brillo en la barra -->
+                                                <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-[4px]"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Detalles tácticos debajo de la barra -->
+                                        <div class="flex justify-between mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            <span>{{ debt.type === 'loan' ? 'Cuota Fija' : 'Pago Mínimo' }}: <span class="text-white">{{ getSymbol(debt.currency) }} {{ formatMoney(debt.minimum_payment) }}</span></span>
+                                            <span v-if="debt.type === 'credit_card' && debt.cutoff_date">Corte: <span class="text-orange-400">{{ debt.cutoff_date }}</span> | Pago: <span class="text-blue-400">{{ debt.payment_date }}</span></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Acciones del Combate -->
+                                    <div class="flex justify-between items-center relative z-10 pt-4 border-t border-slate-800">
                                         <button @click="confirmDelete(debt)"
-                                            class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-red-600 transition-colors">🗑️
-                                            Eliminar</button>
+                                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1">
+                                            <span>🗑️</span> Abortar
+                                        </button>
+                                        
                                         <button v-if="debt.balance > 0" @click="openPayModal(debt)"
-                                            class="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-lg font-bold shadow-sm transition-transform hover:scale-105 flex items-center gap-2">⚔️
-                                            Atacar (Abonar)</button>
+                                            class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-transform hover:scale-105 flex items-center gap-2">
+                                            ⚔️ ATACAR
+                                        </button>
                                         <span v-else
-                                            class="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-bold border border-green-200">✅
-                                            Saldada</span>
+                                            class="bg-emerald-500/20 text-emerald-400 px-8 py-3 rounded-xl font-black uppercase tracking-widest border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                            💀 DERROTADO
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
                             <div v-else
-                                class="text-center p-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 mt-6">
-                                <div class="text-4xl mb-3">🕊️</div>
-                                <h3 class="text-lg font-bold text-gray-900">Sin enemigos a la vista</h3>
-                                <p class="text-gray-500 mt-1">No tienes deudas registradas. ¡Estás en paz financiera o
-                                    te falta
-                                    agregarlas a la izquierda!</p>
+                                class="text-center p-16 border-2 border-dashed border-slate-300 rounded-3xl bg-white mt-6 shadow-sm">
+                                <div class="text-6xl mb-4">🕊️</div>
+                                <h3 class="text-2xl font-black text-slate-900 tracking-tight">Zona Despejada</h3>
+                                <p class="text-slate-500 mt-2 font-medium">No hay jefes enemigos en el radar. Estás en paz financiera o te falta encender el escáner a la izquierda.</p>
                             </div>
 
                         </div>
@@ -488,92 +448,80 @@ const getLoanProgress = (balance, original) => {
             </div>
         </div>
 
-        <div v-if="showPayModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
-            aria-modal="true">
+        <!-- MODAL DE ATAQUE -->
+        <div v-if="showPayModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/75 transition-opacity backdrop-blur-sm" @click="closePayModal">
-                </div>
+                <div class="fixed inset-0 bg-slate-900/90 transition-opacity backdrop-blur-md" @click="closePayModal"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div
-                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3
-                            class="text-xl leading-6 font-extrabold text-gray-900 flex items-center gap-2 border-b border-gray-200 pb-3">
-                            ⚔️ Atacar a {{ selectedDebt?.name }}</h3>
+                <div class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
+                    <div class="bg-slate-900 px-6 pt-8 pb-6">
+                        <h3 class="text-2xl font-black text-white flex items-center gap-3 border-b border-slate-700 pb-4 tracking-tight">
+                            ⚔️ Atacar a {{ selectedDebt?.name }}
+                        </h3>
 
-                        <div v-if="ammunition > 0"
-                            class="mt-4 mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center">
-                            <span class="text-xs font-bold text-blue-800 uppercase flex items-center gap-1">💰 Capital
-                                Libre
-                                Disp:</span>
-                            <span class="text-sm font-black text-blue-900">RD$ {{ formatMoney(ammunition) }}</span>
+                        <div v-if="ammunition > 0" class="mt-6 mb-6 p-4 bg-blue-900/30 border border-blue-500/30 rounded-xl flex justify-between items-center">
+                            <span class="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">🔋 Munición:</span>
+                            <span class="text-lg font-black text-blue-300 font-mono">RD$ {{ formatMoney(ammunition) }}</span>
                         </div>
 
                         <div class="mt-4">
-                            <p class="text-sm text-gray-500 font-medium mb-1">Deuda Actual:</p>
-                            <p class="text-2xl font-black text-red-600 mb-6">{{ getSymbol(selectedDebt?.currency) }} {{
-                                formatMoney(selectedDebt?.balance) }}</p>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">HP Actual del Jefe:</p>
+                            <p class="text-4xl font-black text-red-500 mb-8 font-mono">{{ getSymbol(selectedDebt?.currency) }} {{ formatMoney(selectedDebt?.balance) }}</p>
 
-                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Con cuánto capital vas a
-                                disparar?</label>
-                            <div class="relative rounded-md shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span
-                                        class="text-gray-500 font-bold sm:text-lg">{{ getSymbol(selectedDebt?.currency)
-                                        }}</span></div>
+                            <label class="block text-sm font-bold text-white mb-3 tracking-wide">¿Con cuánto poder vas a golpear?</label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                    <span class="text-slate-400 font-bold text-xl">{{ getSymbol(selectedDebt?.currency) }}</span>
+                                </div>
                                 <input type="text" v-model="paymentAmount" v-money autofocus
-                                    class="block w-full rounded-xl border-gray-300 pl-14 py-4 text-xl focus:border-red-500 bg-gray-50"
+                                    class="block w-full rounded-2xl border-slate-600 bg-slate-800 text-white pl-16 py-5 text-2xl font-mono focus:border-red-500 focus:ring-red-500 shadow-inner"
                                     placeholder="0.00">
                             </div>
-                            <p class="text-xs text-gray-500 mt-2 font-medium">* Por defecto se cargó la cuota/pago
-                                mínimo.</p>
+                            <p class="text-[10px] text-slate-500 mt-3 font-bold uppercase tracking-wider">* Cargado con el ataque mínimo por defecto.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-4 sm:px-6 flex justify-end gap-3 border-t border-gray-100">
-                        <button @click="closePayModal"
-                            class="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold py-2 px-4 rounded-lg">Cancelar
-                            Misión</button>
+                    <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="submitPayment"
-                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-md">💥
-                            Disparar</button>
+                            class="w-full inline-flex justify-center rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] px-6 py-3 bg-red-600 text-sm font-black uppercase tracking-widest text-white hover:bg-red-500 sm:ml-3 sm:w-auto transition-transform hover:scale-105">
+                            💥 Lanzar Ataque
+                        </button>
+                        <button @click="closePayModal"
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-sm px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            Retirada
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
-            role="dialog" aria-modal="true">
+        <!-- MODAL DE BORRAR -->
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/75 transition-opacity backdrop-blur-sm" @click="closeDeleteModal">
-                </div>
+                <div class="fixed inset-0 bg-slate-900/90 transition-opacity backdrop-blur-md" @click="closeDeleteModal"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div
-                    class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
+                    <div class="bg-slate-900 px-6 pt-8 pb-6">
                         <div class="sm:flex sm:items-start">
-                            <div
-                                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-red-500/20 border border-red-500/50 sm:mx-0 sm:h-12 sm:w-12">
+                                ⚠️
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-bold text-gray-900">Eliminar Enemigo</h3>
-                                <div class="mt-2">
-                                    <p class="text-sm text-gray-500">¿Estás seguro de que deseas eliminar la deuda de
-                                        <strong>{{
-                                            selectedDebt?.name }}</strong>? Esta acción no se puede deshacer.</p>
+                                <h3 class="text-xl leading-6 font-black text-white tracking-tight">Eliminar Registro</h3>
+                                <div class="mt-3">
+                                    <p class="text-sm text-slate-400">¿Estás seguro de que deseas eliminar a <strong class="text-red-400">{{ selectedDebt?.name }}</strong> del radar? Esta acción no devolverá tu munición ni se puede deshacer.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
+                    <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="executeDelete" type="button"
-                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-bold text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm">Eliminar
-                            Permanentemente</button>
+                            class="w-full inline-flex justify-center rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] px-6 py-3 bg-red-600 text-sm font-black uppercase tracking-widest text-white hover:bg-red-500 sm:ml-3 sm:w-auto transition-colors">
+                            Eliminar del Radar
+                        </button>
                         <button @click="closeDeleteModal" type="button"
-                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-bold text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-sm px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            Cancelar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -586,9 +534,8 @@ const getLoanProgress = (balance, original) => {
             leave-to-class="opacity-0">
             <div v-if="notification.show"
                 class="fixed bottom-10 right-10 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white flex items-center gap-3"
-                :class="notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'">
-                <span class="text-xl">{{ notification.type === 'success' ? '✅' : '⚠️' }}</span>{{ notification.message
-                }}
+                :class="notification.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'">
+                <span class="text-xl">{{ notification.type === 'success' ? '🎖️' : '⚠️' }}</span>{{ notification.message }}
             </div>
         </transition>
 
