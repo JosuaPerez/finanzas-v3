@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { formatMoney, getSymbol, cleanNum, vMoney } from '@/composables/useDebtUtils';
@@ -155,6 +156,11 @@ const submitForge = () => {
 
         <div class="py-12 relative">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <PageHeader
+                    subtitle="EL ARSENAL"
+                    title="🎯 Forjar Metas"
+                    description="Asigna tus recursos libres para subir de nivel tu equipamiento y economía."
+                />
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     <!-- SECCIÓN IZQUIERDA: CREAR NUEVO PROYECTO -->
@@ -255,13 +261,6 @@ const submitForge = () => {
                         <!-- LISTA DE PROYECTOS -->
                         <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 relative">
                             
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-slate-800/50">
-                                <h2 class="text-2xl font-black text-white flex items-center gap-3 tracking-tight">
-                                    🛡️ Proyectos Activos
-                                </h2>
-                                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mt-2 sm:mt-0">Sube de nivel tu economía</p>
-                            </div>
-
                             <div v-if="goals && goals.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 
                                 <!-- TARJETA DE META (PROYECTO) -->

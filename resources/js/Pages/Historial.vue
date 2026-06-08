@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -74,25 +75,21 @@ const downloadExcel = (id) => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
+                <PageHeader
+                    subtitle="SALA DE ARCHIVOS"
+                    title="🗂️ Registros de Guerra"
+                    description="Revisa el historial de tus batallas pasadas y presupuestos guardados."
+                />
+
                 <!-- Main panel — unified dark glassmorphism -->
                 <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
 
                     <!-- Ambient accent line -->
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
 
-                    <!-- Panel header -->
-                    <div class="mb-8 pb-4 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                            <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                                🗂️ Historial de Batallas
-                            </h1>
-                            <p class="text-slate-400 text-sm mt-1 font-medium">
-                                Revisa tus presupuestos, los ataques a deudas y descarga reportes de batalla.
-                            </p>
-                        </div>
-                        <div v-if="budgets && budgets.length > 0" class="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-lg">
-                            {{ budgets.length }} {{ budgets.length === 1 ? 'registro' : 'registros' }}
-                        </div>
+                    <!-- record count badge -->
+                    <div v-if="budgets && budgets.length > 0" class="mb-6 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-lg w-fit">
+                        {{ budgets.length }} {{ budgets.length === 1 ? 'registro' : 'registros' }}
                     </div>
 
                     <!-- Budget grid -->

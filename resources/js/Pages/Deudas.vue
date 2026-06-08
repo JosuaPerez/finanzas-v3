@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BossCard from '@/Components/BossCard.vue';
 import CombatLog from '@/Components/CombatLog.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
@@ -148,6 +149,11 @@ const submitPayment = () => {
 
         <div class="py-12 relative">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <PageHeader
+                    subtitle="ZONA DE COMBATE"
+                    title="🔥 Atacar Jefes"
+                    description="Analiza los puntos de vida de tus deudas y ejecuta pagos estratégicos."
+                />
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     <!-- SECCIÓN IZQUIERDA: RADAR / AÑADIR ENEMIGO -->
@@ -304,11 +310,7 @@ const submitPayment = () => {
                             <!-- Ambient accent line -->
                             <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
 
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-slate-800/80">
-                                <h2 class="text-3xl font-black text-white flex items-center gap-3 tracking-tight">
-                                    ⚔️ Zona de Combate
-                                </h2>
-                                <div v-if="debts && debts.length > 1" class="flex bg-slate-800/80 p-1 rounded-xl mt-3 sm:mt-0 border border-slate-700/50">
+                            <div v-if="debts && debts.length > 1" class="flex bg-slate-800/80 p-1 rounded-xl mb-6 border border-slate-700/50 w-fit">
                                     <button @click="strategy = 'avalanche'"
                                         :class="strategy === 'avalanche' ? 'bg-slate-950 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-300'"
                                         class="px-4 py-2 rounded-lg text-xs transition-all uppercase tracking-wider">🌋 Avalancha</button>
@@ -316,7 +318,6 @@ const submitPayment = () => {
                                         :class="strategy === 'snowball' ? 'bg-slate-950 text-white font-bold shadow-md' : 'text-slate-500 hover:text-slate-300'"
                                         class="px-4 py-2 rounded-lg text-xs transition-all uppercase tracking-wider">⛄ Bola Nieve</button>
                                 </div>
-                            </div>
 
                             <div v-if="debts && debts.length > 0" class="space-y-6">
 

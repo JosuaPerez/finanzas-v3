@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { formatCurrency } from '@/utils';
@@ -92,11 +93,11 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
                 <!-- ── Page title ── -->
-                <div class="mb-8 px-4 sm:px-0">
-                    <p class="text-xs font-bold uppercase tracking-widest text-blue-500 mb-1">Centro de Mando</p>
-                    <h1 class="text-3xl font-black text-white tracking-tight">🛡️ Planificar Defensa</h1>
-                    <p class="text-slate-400 mt-1 text-sm">Distribuye tus suministros y calcula tu capital libre para la ofensiva.</p>
-                </div>
+                <PageHeader
+                    subtitle="CENTRO DE MANDO"
+                    title="🛡️ Planificar Defensa"
+                    description="Distribuye tus suministros y calcula tu capital libre para la ofensiva."
+                />
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
