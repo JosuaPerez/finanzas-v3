@@ -3,6 +3,35 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
 
+let timeoutId;
+
+// Reinicia el reloj cada vez que el usuario hace algo
+const reiniciarTemporizador = () => {
+    clearTimeout(timeoutId);
+    // 15 minutos = 900,000 milisegundos
+    timeoutId = setTimeout(() => {
+        router.post(route('logout'));
+    }, 900000); 
+};
+
+// Activa los sensores al cargar la pantalla
+onMounted(() => {
+    window.addEventListener('mousemove', reiniciarTemporizador);
+    window.addEventListener('keydown', reiniciarTemporizador);
+    window.addEventListener('scroll', reiniciarTemporizador);
+    window.addEventListener('click', reiniciarTemporizador);
+    reiniciarTemporizador();
+});
+
+// Desactiva los sensores si el usuario sale del sistema manualmente
+onUnmounted(() => {
+    window.removeEventListener('mousemove', reiniciarTemporizador);
+    window.removeEventListener('keydown', reiniciarTemporizador);
+    window.removeEventListener('scroll', reiniciarTemporizador);
+    window.removeEventListener('click', reiniciarTemporizador);
+    clearTimeout(timeoutId);
+});
+
 const isSidebarOpen  = ref(false);
 const isUserMenuOpen = ref(false);
 const userMenuRef    = ref(null);

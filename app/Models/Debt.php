@@ -11,17 +11,23 @@ class Debt extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 
-        'name', 
-        'balance', 
-        'interest_rate', 
+        'user_id',
+        'name',
+        'balance',
+        'interest_rate',
         'minimum_payment',
-        'type', 
-        'credit_limit', 
-        'cutoff_date', 
-        'payment_date', 
+        'type',
+        'credit_limit',
+        'cutoff_date',
+        'payment_date',
         'original_amount',
-        'currency', 
-        'overdraft_percentage'
+        'currency',
+        'overdraft_percentage',
+        'fecha_inicio',
+        'plazo_original_meses',
+    ];
+
+    protected $casts = [
+        'fecha_inicio' => 'date',
     ];
 }

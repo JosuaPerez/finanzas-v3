@@ -19,25 +19,26 @@ import { Head } from '@inertiajs/vue3';
         </div>
 
         <!-- ═══ NAVBAR ═══ -->
-        <nav class="relative z-20 flex items-center justify-between px-6 sm:px-10 lg:px-16 py-5 border-b border-slate-800/60 backdrop-blur-md bg-slate-950/70">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-blue-500/20 border border-blue-500/40 rounded-xl flex items-center justify-center text-xl shadow-[0_0_12px_rgba(59,130,246,0.3)]">
+        <nav class="relative z-20 flex items-center justify-between px-3 sm:px-10 lg:px-16 py-3 sm:py-5 border-b border-slate-800/60 backdrop-blur-md bg-slate-950/70">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div class="flex-shrink-0 w-7 h-7 sm:w-9 sm:h-9 bg-blue-500/20 border border-blue-500/40 rounded-xl flex items-center justify-center text-sm sm:text-xl shadow-[0_0_12px_rgba(59,130,246,0.3)]">
                     ⚔️
                 </div>
-                <span class="font-black text-lg tracking-tight text-white">Finanzas<span class="text-blue-400">RPG</span></span>
+                <span class="font-black text-[13px] sm:text-lg tracking-tight text-white truncate">Finanzas<span class="text-blue-400">RPG</span></span>
             </div>
-            <div class="flex items-center gap-3">
+
+            <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
                 <Link
                     id="nav-login-btn"
                     :href="route('login')"
-                    class="px-5 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-transparent hover:bg-slate-800 transition-all duration-200"
+                    class="whitespace-nowrap px-2.5 py-1.5 sm:px-5 sm:py-2 rounded-xl text-[11px] sm:text-sm font-bold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-transparent hover:bg-slate-800 transition-all duration-200"
                 >
                     Iniciar Sesión
                 </Link>
                 <Link
                     id="nav-register-btn"
                     :href="route('register')"
-                    class="px-5 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500 hover:border-blue-400 shadow-[0_0_14px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] transition-all duration-200 hover:-translate-y-px"
+                    class="whitespace-nowrap px-2.5 py-1.5 sm:px-5 sm:py-2 rounded-xl text-[11px] sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500 hover:border-blue-400 shadow-[0_0_14px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] transition-all duration-200 hover:-translate-y-px"
                 >
                     Registrarse
                 </Link>

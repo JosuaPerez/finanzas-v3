@@ -23,8 +23,79 @@ const form = ref({
     cutoff_date: '',
     payment_date: '',
     original_amount: '',
-    overdraft_percentage: ''
+    overdraft_percentage: '',
+    fecha_inicio: '',
+    plazo_original_meses: '',
 });
+
+// ─── Intelligence Report: Real-Time Amortization Computed Properties ───────────
+
+/** Monthly interest rate (decimal). e.g. 24% annual → 0.02 monthly */
+const monthlyInterestRate = computed(() => {
+    const r = parseFloat(form.value.interest_rate);
+    if (!r || r <= 0) return 0;
+    return r / 100 / 12;
+});
+
+/** HP (current balance) as a clean number */
+const hp = computed(() => cleanNum(form.value.balance));
+
+/** Interest charged on next billing cycle / month */
+const nextMonthInterest = computed(() => {
+    if (!hp.value || !monthlyInterestRate.value) return 0;
+    return hp.value * monthlyInterestRate.value;
+});
+
+/** For Préstamo: how much of the payment actually chips away at the principal */
+const realDamage = computed(() => {
+    if (form.value.type !== 'loan') return 0;
+    const cuota = cleanNum(form.value.minimum_payment);
+    if (!cuota) return 0;
+    return cuota - nextMonthInterest.value;
+});
+
+/**
+ * For Préstamo: number of months to fully pay off using the standard
+ * amortization formula: n = -ln(1 - r·P/C) / ln(1 + r)
+ * Returns Infinity when the payment doesn't beat the interest.
+ */
+const monthsToPayoff = computed(() => {
+    if (form.value.type !== 'loan') return null;
+    const cuota = cleanNum(form.value.minimum_payment);
+    const r = monthlyInterestRate.value;
+    const P = hp.value;
+    if (!cuota || !r || !P) return null;
+    if (cuota <= nextMonthInterest.value) return Infinity;
+    const n = -Math.log(1 - (r * P) / cuota) / Math.log(1 + r);
+    return Math.ceil(n);
+});
+
+/** Payoff month/year formatted in Spanish, e.g. "Octubre 2028" */
+const payoffDate = computed(() => {
+    if (!monthsToPayoff.value || !isFinite(monthsToPayoff.value)) return null;
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthsToPayoff.value);
+    return d.toLocaleDateString('es-DO', { month: 'long', year: 'numeric' });
+});
+
+/** Current month number into the loan (1-based), derived from fecha_inicio */
+const currentLoanMonth = computed(() => {
+    if (!form.value.fecha_inicio) return null;
+    const start = new Date(form.value.fecha_inicio);
+    if (isNaN(start)) return null;
+    const now = new Date();
+    const months =
+        (now.getFullYear() - start.getFullYear()) * 12 +
+        (now.getMonth() - start.getMonth()) + 1;
+    return months > 0 ? months : 1;
+});
+
+/** Dynamic focus-ring class based on active debt type */
+const focusRing = computed(() =>
+    form.value.type === 'loan'
+        ? 'focus:ring-blue-500 focus:border-blue-500'
+        : 'focus:ring-orange-500 focus:border-orange-500'
+);
 
 // formatMoney, getSymbol, getHPStats, cleanNum, vMoney → imported from @/composables/useDebtUtils
 
@@ -78,13 +149,15 @@ const saveDebt = () => {
         payment_date: form.value.type === 'credit_card' ? form.value.payment_date : null,
         overdraft_percentage: form.value.type === 'credit_card' ? cleanNum(form.value.overdraft_percentage) : 0,
         original_amount: form.value.type === 'loan' ? cleanNum(form.value.original_amount) : null,
+        fecha_inicio: form.value.type === 'loan' ? (form.value.fecha_inicio || null) : null,
+        plazo_original_meses: form.value.type === 'loan' ? (parseInt(form.value.plazo_original_meses) || null) : null,
     };
 
     isSubmitting.value = true;
     router.post(route('debts.store'), payload, {
         preserveScroll: true,
         onSuccess: () => {
-            form.value = { type: 'loan', currency: 'DOP', name: '', balance: '', interest_rate: '', minimum_payment: '', credit_limit: '', cutoff_date: '', payment_date: '', original_amount: '', overdraft_percentage: '' };
+            form.value = { type: form.value.type, currency: form.value.currency, name: '', balance: '', interest_rate: '', minimum_payment: '', credit_limit: '', cutoff_date: '', payment_date: '', original_amount: '', overdraft_percentage: '', fecha_inicio: '', plazo_original_meses: '' };
             showNotification('¡Nuevo enemigo detectado en el radar!', 'success');
         },
         onFinish: () => { isSubmitting.value = false; }
@@ -130,23 +203,6 @@ const submitPayment = () => {
     <Head title="Modo Guerra - Deudas" />
 
     <AuthenticatedLayout>
-        <!-- <template #header>
-            <div class="flex items-center justify-between w-full">
-                <h2 class="font-black text-lg sm:text-2xl text-white uppercase tracking-widest flex items-center gap-2">
-                    🔥 Plan de Deudas
-                </h2>
-                
-                <Link :href="route('dashboard')" 
-                      class="shrink-0 flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-700 hover:border-blue-500/50 text-slate-300 hover:text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-lg hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] group">
-                    <span class="text-lg sm:text-xl group-hover:-translate-x-1 transition-transform">❮</span>
-                    <div class="flex-col text-left leading-none hidden sm:flex">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Comando</span>
-                        <span class="text-xs font-bold uppercase tracking-tight">Retornar a Base</span>
-                    </div>
-                </Link>
-            </div>
-        </template> -->
-
         <div class="py-12 relative">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <PageHeader
@@ -186,102 +242,228 @@ const submitPayment = () => {
                                 </div>
                             </div>
 
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Identificación del Objetivo</label>
-                                    <input type="text" v-model="form.name"
-                                        class="w-full bg-slate-800 text-white rounded-lg border-slate-700 focus:ring-red-500 focus:border-red-500 placeholder-slate-500"
-                                        :placeholder="form.type === 'loan' ? 'Ej. El Ogro del Banco' : 'Ej. La Bestia Visa'">
-                                </div>
+                            <!-- ── GRID: Identificación + Estadísticas de Combate ── -->
+                            <div class="grid grid-cols-1 gap-6">
 
-                                <div>
-                                    <label class="block text-xs font-bold text-red-400 mb-1 uppercase tracking-wider">
-                                        {{ form.type === 'loan' ? 'Puntos de Vida (HP Actual)' : 'Daño Recibido (Deuda Actual)' }}
-                                    </label>
-                                    <div class="relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-slate-400 font-bold">{{ getSymbol(form.currency) }}</span>
-                                        </div>
-                                        <input type="text" v-model="form.balance" v-money
-                                            class="w-full bg-slate-800 text-white rounded-lg border-red-900 pl-12 focus:ring-red-500 focus:border-red-500 placeholder-slate-600 font-mono"
-                                            placeholder="0.00">
-                                    </div>
-                                </div>
+                                <!-- ─ SECCIÓN 1: IDENTIFICACIÓN ─ -->
+                                <div class="space-y-4">
+                                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <span class="h-px flex-1 bg-slate-700/70"></span>Identificación<span class="h-px flex-1 bg-slate-700/70"></span>
+                                    </p>
 
-                                <div v-if="form.type === 'loan'" class="p-4 bg-slate-800/50 border border-blue-900/50 rounded-xl">
-                                    <label class="block text-xs font-bold text-blue-400 mb-1 uppercase tracking-wider">Vida Máxima (Monto Original)</label>
-                                    <div class="relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-blue-500 font-bold">{{ getSymbol(form.currency) }}</span>
-                                        </div>
-                                        <input type="text" v-model="form.original_amount" v-money
-                                            class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-blue-500 font-mono"
-                                            placeholder="0.00">
-                                    </div>
-                                </div>
-
-                                <div v-if="form.type === 'credit_card'" class="p-4 bg-slate-800/50 border border-orange-900/50 rounded-xl space-y-4">
-                                    <div class="grid grid-cols-3 gap-2">
-                                        <div class="col-span-2">
-                                            <label class="block text-[10px] font-bold text-orange-400 mb-1 uppercase tracking-wider">Límite Aprobado (Max HP)</label>
-                                            <div class="relative rounded-md shadow-sm">
-                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <span class="text-orange-500 font-bold">{{ getSymbol(form.currency) }}</span>
-                                                </div>
-                                                <input type="text" v-model="form.credit_limit" v-money
-                                                    class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-orange-500 font-mono" placeholder="0.00">
-                                            </div>
-                                        </div>
-                                        <div class="col-span-1">
-                                            <label class="block text-[10px] font-bold text-orange-400 mb-1 uppercase tracking-wider">% Sobregiro</label>
-                                            <div class="relative rounded-md shadow-sm">
-                                                <input type="number" v-model="form.overdraft_percentage"
-                                                    class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pr-6 focus:ring-orange-500 font-mono" placeholder="10">
-                                                <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-                                                    <span class="text-orange-500 font-bold">%</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Día de Corte</label>
-                                            <input type="number" v-model="form.cutoff_date" min="1" max="31"
-                                                class="w-full bg-slate-900 text-white rounded-lg border-slate-700 focus:ring-orange-500 font-mono" placeholder="Ej: 15">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Día de Pago</label>
-                                            <input type="number" v-model="form.payment_date" min="1" max="31"
-                                                class="w-full bg-slate-900 text-white rounded-lg border-slate-700 focus:ring-orange-500 font-mono" placeholder="Ej: 5">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- Nombre -->
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Tasa Interés (Ataque Enemigo)</label>
-                                        <div class="relative rounded-md shadow-sm">
-                                            <input type="number" v-model="form.interest_rate"
-                                                class="w-full bg-slate-800 text-white rounded-lg border-slate-700 pr-8 focus:ring-red-500 font-mono" placeholder="0">
-                                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                <span class="text-slate-500 font-bold">%</span>
-                                            </div>
-                                        </div>
+                                        <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Nombre del Objetivo</label>
+                                        <input type="text" v-model="form.name"
+                                            :class="focusRing"
+                                            class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
+                                            :placeholder="form.type === 'loan' ? 'Ej. El Ogro del Banco' : 'Ej. La Bestia Visa'">
                                     </div>
+
+                                    <!-- HP / Balance -->
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">
-                                            {{ form.type ==='loan' ?'Cuota Fija' : 'Pago Mínimo' }}
+                                        <label class="block text-xs font-bold text-red-400 mb-1.5 uppercase tracking-wider">
+                                            {{ form.type === 'loan' ? '❤️ HP Actual (Saldo)' : '💥 Daño Acumulado (Deuda)' }}
                                         </label>
-                                        <input type="text" v-model="form.minimum_payment" v-money
-                                            class="w-full bg-slate-800 text-white rounded-lg border-slate-700 focus:ring-red-500 font-mono" placeholder="0.00">
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-slate-400 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
+                                            </div>
+                                            <input type="text" v-model="form.balance" v-money
+                                                :class="focusRing"
+                                                class="w-full bg-slate-950 border border-red-900/60 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
+                                                placeholder="0.00">
+                                        </div>
+                                    </div>
+
+                                    <!-- Loan extra: Monto Original -->
+                                    <div v-if="form.type === 'loan'" class="p-3.5 bg-slate-800/50 border border-blue-900/50 rounded-xl">
+                                        <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">🛡️ Vida Máxima (Monto Original)</label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-blue-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
+                                            </div>
+                                            <input type="text" v-model="form.original_amount" v-money
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
+                                                placeholder="0.00">
+                                        </div>
+                                    </div>
+
+                                    <!-- Credit Card extras -->
+                                    <div v-if="form.type === 'credit_card'" class="p-3.5 bg-slate-800/50 border border-orange-900/50 rounded-xl space-y-4">
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div class="col-span-2">
+                                                <label class="block text-[10px] font-bold text-orange-400 mb-1.5 uppercase tracking-wider">Límite Aprobado (Max HP)</label>
+                                                <div class="relative">
+                                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span class="text-orange-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
+                                                    </div>
+                                                    <input type="text" v-model="form.credit_limit" v-money
+                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                        placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-span-1">
+                                                <label class="block text-[10px] font-bold text-orange-400 mb-1.5 uppercase tracking-wider">% Sobregiro</label>
+                                                <div class="relative">
+                                                    <input type="number" v-model="form.overdraft_percentage"
+                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pr-7 pl-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                        placeholder="10">
+                                                    <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                                        <span class="text-orange-500 font-bold text-xs">%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Corte</label>
+                                                <input type="number" v-model="form.cutoff_date" min="1" max="31"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                    placeholder="Ej: 15">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Pago</label>
+                                                <input type="number" v-model="form.payment_date" min="1" max="31"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                    placeholder="Ej: 5">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <!-- ─ SECCIÓN 2: ESTADÍSTICAS DE COMBATE ─ -->
+                                <div class="space-y-4">
+                                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <span class="h-px flex-1 bg-slate-700/70"></span>Estadísticas de Combate<span class="h-px flex-1 bg-slate-700/70"></span>
+                                    </p>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <!-- Tasa de Interés -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">⚔️ Tasa Anual</label>
+                                            <div class="relative">
+                                                <input type="number" v-model="form.interest_rate"
+                                                    :class="focusRing"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-3 pr-8 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
+                                                    placeholder="0">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-slate-500 font-bold text-xs">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cuota / Pago Mínimo -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                                                {{ form.type === 'loan' ? '🗡️ Cuota Fija' : '🛡️ Pago Mínimo' }}
+                                            </label>
+                                            <input type="text" v-model="form.minimum_payment" v-money
+                                                :class="focusRing"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
+                                                placeholder="0.00">
+                                        </div>
+                                    </div>
+
+                                    <!-- Loan-only: Fecha de Inicio + Plazo Original -->
+                                    <div v-if="form.type === 'loan'" class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">📅 Día de Despliegue</label>
+                                            <input type="date" v-model="form.fecha_inicio"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600 [color-scheme:dark]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">🗓️ Duración (meses)</label>
+                                            <input type="number" v-model="form.plazo_original_meses" min="1" max="600"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
+                                                placeholder="Ej: 60">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ─ REPORTE DE INTELIGENCIA ─ -->
+                                <Transition
+                                    enter-active-class="transition-all duration-500 ease-out"
+                                    enter-from-class="opacity-0 -translate-y-2"
+                                    enter-to-class="opacity-100 translate-y-0"
+                                    leave-active-class="transition-all duration-300 ease-in"
+                                    leave-from-class="opacity-100"
+                                    leave-to-class="opacity-0"
+                                >
+                                    <div
+                                        v-if="hp > 0 && monthlyInterestRate > 0"
+                                        class="bg-slate-800/40 border border-slate-600 rounded-xl p-4 text-sm text-slate-300 space-y-2"
+                                    >
+                                        <!-- Header -->
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] flex items-center gap-2 mb-1">
+                                            <span class="text-base">📡</span> Reporte de Inteligencia
+                                        </p>
+
+                                        <!-- Tarjeta de Crédito -->
+                                        <p v-if="form.type === 'credit_card'" class="leading-relaxed">
+                                            Si no liquidas el saldo este mes, el enemigo contraatacará con aprox.
+                                            <strong class="text-orange-400 font-mono">
+                                                {{ getSymbol(form.currency) }} {{ formatMoney(nextMonthInterest) }}
+                                            </strong>
+                                            en intereses.
+                                        </p>
+
+                                        <!-- Préstamo válido -->
+                                        <template v-else-if="form.type === 'loan' && isFinite(monthsToPayoff) && monthsToPayoff > 0">
+                                            <p class="leading-relaxed">
+                                                Tu cuota de
+                                                <strong class="text-blue-400 font-mono">{{ getSymbol(form.currency) }} {{ formatMoney(cleanNum(form.minimum_payment)) }}</strong>
+                                                absorberá
+                                                <strong class="text-red-400 font-mono">{{ getSymbol(form.currency) }} {{ formatMoney(nextMonthInterest) }}</strong>
+                                                en intereses y hará
+                                                <strong class="text-green-400 font-mono">{{ getSymbol(form.currency) }} {{ formatMoney(realDamage) }}</strong>
+                                                de daño al capital.
+                                            </p>
+                                            <p class="leading-relaxed">
+                                                A este ritmo, derrotarás a este jefe en
+                                                <strong class="text-yellow-400">{{ payoffDate }}</strong>
+                                                <span class="text-slate-500">({{ monthsToPayoff }} meses)</span>.
+                                            </p>
+                                            <!-- Progreso histórico (optional) -->
+                                            <p v-if="currentLoanMonth && form.plazo_original_meses"
+                                               class="flex items-center gap-1.5 text-slate-400 border-t border-slate-700/60 pt-2 mt-1">
+                                                <span>📍</span>
+                                                <span>Progreso histórico: Estás en el mes
+                                                    <strong class="text-white">{{ currentLoanMonth }}</strong>
+                                                    de
+                                                    <strong class="text-white">{{ form.plazo_original_meses }}</strong>.
+                                                </span>
+                                            </p>
+                                        </template>
+
+                                        <!-- Préstamo inválido: cuota menor que el interés -->
+                                        <div
+                                            v-else-if="form.type === 'loan' && cleanNum(form.minimum_payment) > 0 && !isFinite(monthsToPayoff)"
+                                            class="flex items-start gap-2 p-2.5 rounded-lg bg-red-900/20 border border-red-700/50"
+                                        >
+                                            <span class="text-lg leading-none mt-0.5">⚠️</span>
+                                            <p class="text-red-300 leading-relaxed">
+                                                <strong>ALERTA:</strong> Tu cuota es demasiado baja y no logra perforar el escudo de intereses
+                                                (<strong class="font-mono text-red-400">{{ getSymbol(form.currency) }} {{ formatMoney(nextMonthInterest) }}</strong>).
+                                                El HP del enemigo <strong>aumentará</strong> cada mes.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Transition>
+
+                                <!-- ─ BOTÓN FIJAR OBJETIVO ─ -->
                                 <button @click="saveDebt"
                                     :disabled="isSubmitting"
-                                    :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
-                                    class="w-full mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-                                    Fijar Objetivo
+                                    :class="[
+                                        { 'opacity-70 cursor-wait pointer-events-none': isSubmitting },
+                                        form.type === 'loan'
+                                            ? 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_18px_rgba(37,99,235,0.45)]'
+                                            : 'bg-orange-600 hover:bg-orange-500 shadow-[0_0_18px_rgba(234,88,12,0.45)]'
+                                    ]"
+                                    class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 text-white">
+                                    🎯 Fijar Objetivo
                                 </button>
+
                             </div>
                         </div>
                     </div>
