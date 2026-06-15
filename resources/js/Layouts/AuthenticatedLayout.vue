@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
 
@@ -37,6 +37,9 @@ const isUserMenuOpen = ref(false);
 const userMenuRef    = ref(null);
 
 const page = usePage();
+
+// Streak — read from the globally shared auth prop
+const currentStreak = computed(() => page.props.auth?.current_streak ?? 0);
 
 const toggleBodyScroll = () => {
     document.body.style.overflow = isSidebarOpen.value ? 'hidden' : '';
@@ -118,6 +121,13 @@ onUnmounted(() => {
                                     @click="isUserMenuOpen = !isUserMenuOpen"
                                     class="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/70 text-slate-300 hover:text-white hover:bg-slate-700 hover:border-slate-600 transition-all duration-200 text-sm font-bold"
                                 >
+                                    <!-- Streak badge -->
+                                    <span
+                                        :class="currentStreak > 2
+                                            ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] font-black'
+                                            : 'text-slate-500 font-semibold'"
+                                        class="flex items-center gap-0.5 text-sm tabular-nums"
+                                    >🔥{{ currentStreak }}</span>
                                     <!-- Tactical avatar -->
                                     <div class="w-7 h-7 rounded-lg bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 text-xs font-black flex-shrink-0">
                                         {{ page.props.auth.user.name.charAt(0).toUpperCase() }}
@@ -175,9 +185,9 @@ onUnmounted(() => {
                                 </Transition>
                             </div>
 
-                            <!-- Mobile hamburger -->
+                            <!-- Mobile hamburger — hidden on mobile (replaced by bottom nav), visible on sm only if needed -->
                             <button @click="openSidebar"
-                                class="sm:hidden inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                                class="hidden sm:inline-flex md:hidden items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
                                 <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
@@ -224,7 +234,16 @@ onUnmounted(() => {
                                 {{ page.props.auth.user.name.charAt(0).toUpperCase() }}
                             </div>
                             <div>
-                                <div class="text-sm font-bold text-white">{{ page.props.auth.user.name }}</div>
+                                <div class="flex items-center gap-2">
+                                    <div class="text-sm font-bold text-white">{{ page.props.auth.user.name }}</div>
+                                    <!-- Streak badge in sidebar -->
+                                    <span
+                                        :class="currentStreak > 2
+                                            ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] font-black'
+                                            : 'text-slate-500 font-semibold'"
+                                        class="flex items-center gap-0.5 text-xs tabular-nums"
+                                    >🔥{{ currentStreak }}</span>
+                                </div>
                                 <div class="text-xs text-slate-500">{{ page.props.auth.user.email }}</div>
                             </div>
                         </div>
@@ -273,9 +292,90 @@ onUnmounted(() => {
                 </div>
             </header>
 
-            <main>
+            <main class="pb-24 md:pb-0">
                 <slot />
             </main>
+
+            <!-- ═══ MOBILE BOTTOM NAVIGATION BAR ═══ -->
+            <nav
+                class="fixed bottom-0 left-0 right-0 w-full bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex justify-around items-center z-50 md:hidden"
+                style="padding-bottom: env(safe-area-inset-bottom, 0px); padding-top: 0.75rem;"
+            >
+                <!-- Dashboard -->
+                <Link
+                    id="bottom-nav-dashboard"
+                    :href="route('dashboard')"
+                    :class="route().current('dashboard') ? 'text-blue-400' : 'text-slate-500'"
+                    class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-wider"
+                        :class="route().current('dashboard') ? 'text-blue-400' : 'text-slate-600'"
+                    >Inicio</span>
+                    <!-- Active indicator dot -->
+                    <span v-if="route().current('dashboard')" class="w-1 h-1 rounded-full bg-blue-400 mt-0.5"></span>
+                    <span v-else class="w-1 h-1 mt-0.5"></span>
+                </Link>
+
+                <!-- Presupuesto -->
+                <Link
+                    id="bottom-nav-presupuesto"
+                    :href="route('presupuesto')"
+                    :class="route().current('presupuesto') ? 'text-blue-400' : 'text-slate-500'"
+                    class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-wider"
+                        :class="route().current('presupuesto') ? 'text-blue-400' : 'text-slate-600'"
+                    >Escudo</span>
+                    <span v-if="route().current('presupuesto')" class="w-1 h-1 rounded-full bg-blue-400 mt-0.5"></span>
+                    <span v-else class="w-1 h-1 mt-0.5"></span>
+                </Link>
+
+                <!-- Deudas -->
+                <Link
+                    id="bottom-nav-deudas"
+                    :href="route('deudas')"
+                    :class="route().current('deudas') ? 'text-red-400' : 'text-slate-500'"
+                    class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-wider"
+                        :class="route().current('deudas') ? 'text-red-400' : 'text-slate-600'"
+                    >Jefes</span>
+                    <span v-if="route().current('deudas')" class="w-1 h-1 rounded-full bg-red-400 mt-0.5"></span>
+                    <span v-else class="w-1 h-1 mt-0.5"></span>
+                </Link>
+
+                <!-- Metas -->
+                <Link
+                    id="bottom-nav-metas"
+                    :href="route('metas')"
+                    :class="route().current('metas') ? 'text-emerald-400' : 'text-slate-500'"
+                    class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-wider"
+                        :class="route().current('metas') ? 'text-emerald-400' : 'text-slate-600'"
+                    >Metas</span>
+                    <span v-if="route().current('metas')" class="w-1 h-1 rounded-full bg-emerald-400 mt-0.5"></span>
+                    <span v-else class="w-1 h-1 mt-0.5"></span>
+                </Link>
+            </nav>
         </div>
     </div>
 </template>

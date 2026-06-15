@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/vue3';
         <meta name="description" content="Maneja tus finanzas como un RPG. Derrota tus deudas, sube de nivel tus ahorros y conquista tu presupuesto." />
     </Head>
 
-    <div class="min-h-screen bg-slate-950 text-white overflow-x-hidden">
+    <div class="min-h-screen bg-slate-950 text-white overflow-x-hidden pt-[env(safe-area-inset-top)]">
 
         <!-- ═══ AMBIENT BACKGROUND ORBS ═══ -->
         <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -27,18 +27,19 @@ import { Head } from '@inertiajs/vue3';
                 <span class="font-black text-[13px] sm:text-lg tracking-tight text-white truncate">Finanzas<span class="text-blue-400">RPG</span></span>
             </div>
 
-            <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <!-- Auth buttons: hidden on mobile, shown on md+ -->
+            <div class="hidden md:flex items-center gap-3 flex-shrink-0">
                 <Link
                     id="nav-login-btn"
                     :href="route('login')"
-                    class="whitespace-nowrap px-2.5 py-1.5 sm:px-5 sm:py-2 rounded-xl text-[11px] sm:text-sm font-bold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-transparent hover:bg-slate-800 transition-all duration-200"
+                    class="whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-transparent hover:bg-slate-800 transition-all duration-200"
                 >
                     Iniciar Sesión
                 </Link>
                 <Link
                     id="nav-register-btn"
                     :href="route('register')"
-                    class="whitespace-nowrap px-2.5 py-1.5 sm:px-5 sm:py-2 rounded-xl text-[11px] sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500 hover:border-blue-400 shadow-[0_0_14px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] transition-all duration-200 hover:-translate-y-px"
+                    class="whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500 hover:border-blue-400 shadow-[0_0_14px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] transition-all duration-200 hover:-translate-y-px"
                 >
                     Registrarse
                 </Link>
@@ -71,12 +72,12 @@ import { Head } from '@inertiajs/vue3';
                 <strong class="text-slate-200">nivel que conquistas</strong>.
             </p>
 
-            <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row items-center gap-4">
+            <!-- CTA Buttons — full-width on mobile for easy thumb tapping -->
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-2 sm:px-0">
                 <Link
                     id="hero-register-btn"
                     :href="route('register')"
-                    class="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:shadow-[0_0_40px_rgba(37,99,235,0.7)] border border-blue-500 transition-all duration-300 hover:-translate-y-1 hover:scale-105 text-base"
+                    class="group inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-5 sm:py-4 rounded-2xl font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:shadow-[0_0_40px_rgba(37,99,235,0.7)] border border-blue-500 transition-all duration-300 hover:-translate-y-1 hover:scale-105 text-lg sm:text-base"
                 >
                     <span>⚔️</span>
                     Empezar Campaña
@@ -85,7 +86,7 @@ import { Head } from '@inertiajs/vue3';
                 <Link
                     id="hero-login-btn"
                     :href="route('login')"
-                    class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold uppercase tracking-wider text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-slate-900/60 hover:bg-slate-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 text-base"
+                    class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-5 sm:py-4 rounded-2xl font-bold uppercase tracking-wider text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-slate-900/60 hover:bg-slate-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 text-lg sm:text-base"
                 >
                     Ya tengo cuenta
                 </Link>

@@ -9,11 +9,12 @@ use Illuminate\Notifications\Notifiable;
 use App\Notifications\CustomResetPassword;
 use App\Models\Debt;
 use App\Models\Goal;
+use App\Traits\SurvivalMechanics;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SurvivalMechanics;
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +25,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'current_streak',
+        'longest_streak',
+        'last_action_date',
     ];
 
     /**
@@ -44,8 +48,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'  => 'datetime',
+            'password'           => 'hashed',
+            'last_action_date'   => 'date',
         ];
     }
 

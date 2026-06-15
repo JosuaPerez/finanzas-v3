@@ -51,6 +51,44 @@ const forgePercent = computed(() => {
     if (props.totalGoalsTarget <= 0) return 0;
     return Math.min(100, Math.round((props.totalGoalsSaved / props.totalGoalsTarget) * 100));
 });
+
+// ── Onboarding Mission ─────────────────────────────────────────────────
+const onboardingMission = computed(() => {
+    const capital = props.lastCapitalLibre;
+    const budgets  = props.budgetCount;
+    const debts    = props.activeDebtCount;
+
+    // Rule 1: no budget recorded yet (capital = 0 / null)
+    if (!budgets || !capital || capital <= 0) {
+        return {
+            id:    'mission-1',
+            icon:  '⚔️',
+            badge: 'MISIÓN 1',
+            title: 'Asegurar Suministros',
+            body:  'No puedes ir a la guerra con los bolsillos vacíos. Registra tu primer ingreso y descubre tu capital libre.',
+            cta:   'Ir al Presupuesto →',
+            route: 'presupuesto',
+            color: 'blue',
+        };
+    }
+
+    // Rule 2: has capital but zero active debts tracked
+    if (capital > 0 && debts === 0) {
+        return {
+            id:    'mission-2',
+            icon:  '📞',
+            badge: 'MISIÓN 2',
+            title: 'Encender el Radar',
+            body:  'Tienes capital, pero necesitas objetivos. Identifica a tus jefes para planear el ataque.',
+            cta:   'Ir a Deudas →',
+            route: 'deudas',
+            color: 'red',
+        };
+    }
+
+    // Rule 3: everything is set → no banner
+    return null;
+});
 </script>
 
 <template>
@@ -61,73 +99,74 @@ const forgePercent = computed(() => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
                 <!-- ══════════════════════════════════════════════════════════
-                     BRIEFING DEL COMANDANTE — quick-action cards
+                     ONBOARDING MISSION BANNER
                 ═══════════════════════════════════════════════════════════ -->
-                <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
-                    <!-- Ambient orbs -->
-                    <div class="absolute inset-0 pointer-events-none overflow-hidden">
-                        <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
-                        <div class="absolute bottom-0 right-0 w-72 h-72 bg-emerald-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10"></div>
-                    </div>
+                <Transition
+                    enter-active-class="transition-all duration-500 ease-out"
+                    enter-from-class="opacity-0 -translate-y-3"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-300 ease-in"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0 -translate-y-2"
+                >
+                    <div
+                        v-if="onboardingMission"
+                        :id="onboardingMission.id"
+                        :class="[
+                            'relative overflow-hidden rounded-2xl border backdrop-blur-md px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4',
+                            onboardingMission.color === 'blue'
+                                ? 'bg-blue-950/60 border-blue-500/40 shadow-[0_0_30px_rgba(59,130,246,0.25)]'
+                                : 'bg-red-950/60  border-red-500/40  shadow-[0_0_30px_rgba(239,68,68,0.25)]'
+                        ]"
+                    >
+                        <!-- Ambient glow blob -->
+                        <div
+                            class="absolute -top-10 -left-10 w-48 h-48 rounded-full mix-blend-screen filter blur-[70px] opacity-20 pointer-events-none"
+                            :class="onboardingMission.color === 'blue' ? 'bg-blue-500' : 'bg-red-500'"
+                        ></div>
 
-                    <div class="relative z-10">
-                        <div class="text-center mb-10">
-                            <h2 class="text-xs sm:text-sm font-bold text-blue-400 tracking-widest uppercase mb-2">
-                                Briefing del Comandante
-                            </h2>
-                            <h1 class="text-3xl md:text-4xl font-black mb-4">¿Cuál es tu próximo movimiento?</h1>
-                            <p class="text-slate-400 max-w-2xl mx-auto font-medium">
-                                Mantén tu economía blindada. Organiza tus suministros, mejora tu equipamiento y no dejes que el enemigo tome la iniciativa.
-                            </p>
+                        <!-- Status dot -->
+                        <div class="relative flex-shrink-0 flex h-5 w-5 items-center justify-center">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                                :class="onboardingMission.color === 'blue' ? 'bg-blue-400' : 'bg-red-400'"
+                            ></span>
+                            <span
+                                class="relative inline-flex rounded-full h-3 w-3"
+                                :class="onboardingMission.color === 'blue' ? 'bg-blue-500' : 'bg-red-500'"
+                            ></span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-
-                            <!-- Presupuesto -->
-                            <Link :href="route('presupuesto')"
-                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-blue-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
-                                <div class="bg-blue-500/20 border border-blue-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl sm:text-2xl">🛡️</span>
-                                </div>
-                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Planificar Defensa</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Distribuye tus suministros y capital libre.</p>
-                            </Link>
-
-                            <!-- Deudas -->
-                            <Link :href="route('deudas')"
-                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-red-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
-                                <div class="bg-red-500/20 border border-red-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl sm:text-2xl">🔥</span>
-                                </div>
-                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Atacar Jefes</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Haz daño crítico a las deudas.</p>
-                            </Link>
-
-                            <!-- Metas -->
-                            <Link :href="route('metas')"
-                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
-                                <div class="bg-emerald-500/20 border border-emerald-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl sm:text-2xl">🎯</span>
-                                </div>
-                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Mejorar Arsenal</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Forja equipamiento fijando objetivos.</p>
-                            </Link>
-
-                            <!-- Historial -->
-                            <Link :href="route('historial')"
-                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-amber-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
-                                <div class="bg-amber-500/20 border border-amber-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl sm:text-2xl">🗂️</span>
-                                </div>
-                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Archivos de Guerra</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Analiza el registro de tus victorias.</p>
-                            </Link>
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0 relative z-10">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span
+                                    class="text-[10px] font-black tracking-[0.2em] uppercase px-2 py-0.5 rounded"
+                                    :class="onboardingMission.color === 'blue' ? 'bg-blue-500/20 text-blue-300' : 'bg-red-500/20 text-red-300'"
+                                >{{ onboardingMission.badge }}</span>
+                                <span class="text-base">{{ onboardingMission.icon }}</span>
+                            </div>
+                            <p class="font-black text-white text-base sm:text-lg leading-tight">{{ onboardingMission.title }}</p>
+                            <p class="text-sm mt-1 leading-relaxed"
+                                :class="onboardingMission.color === 'blue' ? 'text-blue-200/80' : 'text-red-200/80'"
+                            >{{ onboardingMission.body }}</p>
                         </div>
+
+                        <!-- CTA Button -->
+                        <Link
+                            :href="route(onboardingMission.route)"
+                            :class="[
+                                'flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all hover:scale-105 hover:-translate-y-0.5 text-white whitespace-nowrap relative z-10',
+                                onboardingMission.color === 'blue'
+                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                                    : 'bg-red-600  hover:bg-red-500  shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+                            ]"
+                        >{{ onboardingMission.cta }}</Link>
                     </div>
-                </div>
+                </Transition>
 
                 <!-- ══════════════════════════════════════════════════════════
-                     RESUMEN DE CAMPAÑA — gamified HUD
+                     RESUMEN DE CAMPAÑA — gamified HUD (moved above action grid)
                 ═══════════════════════════════════════════════════════════ -->
                 <div>
                     <div class="flex items-baseline justify-between mb-4 px-1">
@@ -136,7 +175,7 @@ const forgePercent = computed(() => {
                             <h2 class="text-xl font-black text-white">Resumen de Campaña</h2>
                         </div>
                         <Link :href="route('historial')" class="text-xs font-bold text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-wider">
-                            Ver Historial →
+                            Ver Historial &rarr;
                         </Link>
                     </div>
 
@@ -261,6 +300,72 @@ const forgePercent = computed(() => {
                                     <span v-else>🏆 ¡Eres casi imparable! Tus metas dominan el campo de batalla.</span>
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════════════════
+                     BRIEFING DEL COMANDANTE — quick-action cards
+                ═══════════════════════════════════════════════════════════ -->
+                <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
+                    <!-- Ambient orbs -->
+                    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
+                        <div class="absolute bottom-0 right-0 w-72 h-72 bg-emerald-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10"></div>
+                    </div>
+
+                    <div class="relative z-10">
+                        <div class="text-center mb-10">
+                            <h2 class="text-xs sm:text-sm font-bold text-blue-400 tracking-widest uppercase mb-2">
+                                Briefing del Comandante
+                            </h2>
+                            <h1 class="text-3xl md:text-4xl font-black mb-4">¿Cuál es tu próximo movimiento?</h1>
+                            <p class="text-slate-400 max-w-2xl mx-auto font-medium">
+                                Mantén tu economía blindada. Organiza tus suministros, mejora tu equipamiento y no dejes que el enemigo tome la iniciativa.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+
+                            <!-- Presupuesto -->
+                            <Link :href="route('presupuesto')"
+                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-blue-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
+                                <div class="bg-blue-500/20 border border-blue-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                                    <span class="text-xl sm:text-2xl">🛡️</span>
+                                </div>
+                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Planificar Defensa</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Distribuye tus suministros y capital libre.</p>
+                            </Link>
+
+                            <!-- Deudas -->
+                            <Link :href="route('deudas')"
+                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-red-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
+                                <div class="bg-red-500/20 border border-red-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                                    <span class="text-xl sm:text-2xl">🔥</span>
+                                </div>
+                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Atacar Jefes</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Haz daño crítico a las deudas.</p>
+                            </Link>
+
+                            <!-- Metas -->
+                            <Link :href="route('metas')"
+                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
+                                <div class="bg-emerald-500/20 border border-emerald-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                                    <span class="text-xl sm:text-2xl">🎯</span>
+                                </div>
+                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Mejorar Arsenal</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Forja equipamiento fijando objetivos.</p>
+                            </Link>
+
+                            <!-- Historial -->
+                            <Link :href="route('historial')"
+                                class="group bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-amber-500 p-4 sm:p-6 rounded-2xl transition-all cursor-pointer flex flex-col items-start text-left shadow-lg hover:-translate-y-1">
+                                <div class="bg-amber-500/20 border border-amber-500/30 p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                                    <span class="text-xl sm:text-2xl">🗂️</span>
+                                </div>
+                                <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Archivos de Guerra</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Analiza el registro de tus victorias.</p>
+                            </Link>
                         </div>
                     </div>
                 </div>

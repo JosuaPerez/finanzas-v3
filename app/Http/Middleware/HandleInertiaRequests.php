@@ -33,6 +33,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                // Streak data — available as usePage().props.auth.current_streak
+                'current_streak' => $request->user()?->current_streak ?? 0,
             ],
         ];
     }

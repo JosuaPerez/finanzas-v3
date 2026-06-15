@@ -4,7 +4,7 @@ import BossCard from '@/Components/BossCard.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 const props = defineProps({
@@ -98,6 +98,65 @@ const focusRing = computed(() =>
 );
 
 // formatMoney, getSymbol, getHPStats, cleanNum, vMoney → imported from @/composables/useDebtUtils
+
+// ─── Dominican Banks & Credit Cards Catalogue (Cascading) ───────────────────
+const bancosYTarjetas = {
+    'Banco Popular': [
+        { name: 'Visa Clásica / Standard', interest: 60, overdraft: 10 },
+        { name: 'Visa Oro',                interest: 60, overdraft: 10 },
+        { name: 'Visa Platinum',           interest: 60, overdraft: 10 },
+        { name: 'Mastercard Black',        interest: 60, overdraft: 10 },
+    ],
+    'BHD': [
+        { name: 'Visa Clásica BHD',   interest: 60, overdraft: 10 },
+        { name: 'Visa Platinum BHD',  interest: 60, overdraft: 10 },
+        { name: 'Mastercard Mujer',   interest: 60, overdraft: 10 },
+    ],
+    'Banreservas': [
+        { name: 'Visa Standard',    interest: 60, overdraft: 10 },
+        { name: 'Mastercard Black', interest: 60, overdraft: 10 },
+        { name: 'Visa SER',         interest: 45, overdraft: 10 },
+    ],
+    'Scotiabank': [
+        { name: 'Visa Clásica Scotia',  interest: 60, overdraft: 10 },
+        { name: 'Visa Gold Scotia',     interest: 55, overdraft: 10 },
+        { name: 'Visa Platinum Scotia', interest: 50, overdraft: 10 },
+    ],
+    'Banco Santa Cruz': [
+        { name: 'Visa Clásica Santa Cruz',  interest: 60, overdraft: 10 },
+        { name: 'Visa Platinum Santa Cruz', interest: 55, overdraft: 10 },
+    ],
+    'Otro Banco': [
+        { name: 'Otra Tarjeta...', interest: 0, overdraft: 0 },
+    ],
+};
+
+/** Local-only ref: tracks which bank is selected in Dropdown 1. */
+const bancoSeleccionado = ref('');
+
+/** Cards available for the currently selected bank. */
+const tarjetasDelBanco = computed(() =>
+    bancoSeleccionado.value ? (bancosYTarjetas[bancoSeleccionado.value] ?? []) : []
+);
+
+/**
+ * Reset the card name whenever the bank changes so stale values
+ * can't be submitted with a mismatched bank.
+ */
+watch(bancoSeleccionado, () => {
+    form.value.name             = '';
+    form.value.interest_rate    = '';
+    form.value.overdraft_percentage = '';
+});
+
+/** Called on Dropdown 2 change — auto-fills rate & overdraft. */
+const onCardSelect = (cardName) => {
+    const list = tarjetasDelBanco.value;
+    const card = list.find(c => c.name === cardName);
+    if (!card || card.interest === 0) return;   // «Otra Tarjeta...» → leave fields editable
+    form.value.interest_rate        = card.interest;
+    form.value.overdraft_percentage = card.overdraft;
+};
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -251,13 +310,74 @@ const submitPayment = () => {
                                         <span class="h-px flex-1 bg-slate-700/70"></span>Identificación<span class="h-px flex-1 bg-slate-700/70"></span>
                                     </p>
 
-                                    <!-- Nombre -->
+                                    <!-- Nombre del Objetivo — text for loans, select for credit cards -->
                                     <div>
                                         <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Nombre del Objetivo</label>
-                                        <input type="text" v-model="form.name"
+
+                                        <!-- ── PRÉSTAMO: plain text input ── -->
+                                        <input
+                                            v-if="form.type === 'loan'"
+                                            type="text"
+                                            v-model="form.name"
                                             :class="focusRing"
                                             class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
-                                            :placeholder="form.type === 'loan' ? 'Ej. El Ogro del Banco' : 'Ej. La Bestia Visa'">
+                                            placeholder="Ej. El Ogro del Banco"
+                                        >
+
+                                        <!-- ── TARJETA: cascading bank → card selects ── -->
+                                        <div v-else class="space-y-3">
+
+                                            <!-- ① Dropdown 1: Bank -->
+                                            <div class="relative">
+                                                <select
+                                                    v-model="bancoSeleccionado"
+                                                    :class="focusRing"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-none focus:ring-2 appearance-none cursor-pointer"
+                                                >
+                                                    <option value="" disabled class="text-slate-500">Selecciona el Banco 🏦</option>
+                                                    <option
+                                                        v-for="banco in Object.keys(bancosYTarjetas)"
+                                                        :key="banco"
+                                                        :value="banco"
+                                                        class="bg-slate-900 text-white"
+                                                    >{{ banco }}</option>
+                                                </select>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <!-- ② Dropdown 2: Card (revealed after bank is picked) -->
+                                            <Transition
+                                                enter-active-class="transition-all duration-300 ease-out"
+                                                enter-from-class="opacity-0 -translate-y-1"
+                                                enter-to-class="opacity-100 translate-y-0"
+                                            >
+                                                <div v-if="bancoSeleccionado" class="relative">
+                                                    <select
+                                                        v-model="form.name"
+                                                        @change="onCardSelect(form.name)"
+                                                        :class="focusRing"
+                                                        class="w-full bg-slate-950 border border-orange-900/60 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-none focus:ring-2 appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="" disabled class="text-slate-500">Selecciona la Tarjeta 💳</option>
+                                                        <option
+                                                            v-for="card in tarjetasDelBanco"
+                                                            :key="card.name"
+                                                            :value="card.name"
+                                                            class="bg-slate-900 text-white"
+                                                        >{{ card.name }}{{ card.interest > 0 ? ` — ${card.interest}% anual` : '' }}</option>
+                                                    </select>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                        <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </Transition>
+                                        </div>
                                     </div>
 
                                     <!-- HP / Balance -->
