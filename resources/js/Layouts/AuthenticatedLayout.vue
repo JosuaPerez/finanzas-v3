@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
+import QuickAttackModal from '@/Components/QuickAttackModal.vue';
 
 let timeoutId;
 
@@ -376,6 +377,8 @@ onUnmounted(() => {
                     <span v-else class="w-1 h-1 mt-0.5"></span>
                 </Link>
             </nav>
+            <!-- ═══ QUICK ATTACK MODAL — global Ctrl+K shortcut ═══ -->
+            <QuickAttackModal />
         </div>
     </div>
 </template>

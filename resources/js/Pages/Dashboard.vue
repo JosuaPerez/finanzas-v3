@@ -272,7 +272,7 @@ const onboardingMission = computed(() => {
                                 </div>
                                 <div>
                                     <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-0.5">Rango Actual</p>
-                                    <p class="text-xl font-black" :class="commanderRank.color">{{ commanderRank.title }}</p>
+                                    <p class="text-xl font-black" :class="commanderRank.color">{{ $page.props.auth.user.rank_name }}</p>
                                     <p class="text-xs text-slate-600 mt-0.5">{{ page.props.auth.user.name }}</p>
                                 </div>
                             </div>
@@ -281,13 +281,13 @@ const onboardingMission = computed(() => {
                             <div class="flex-1 min-w-0">
                                 <div class="flex justify-between items-baseline mb-2">
                                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Progreso de Campaña</p>
-                                    <span class="text-sm font-black text-white">{{ campaignXP }}<span class="text-slate-600 font-normal text-xs"> / 100 XP</span></span>
+                                    <span class="text-sm font-black text-white">{{ $page.props.auth.user.xp_progress.current }}<span class="text-slate-600 font-normal text-xs"> / {{ $page.props.auth.user.xp_progress.needed }} XP (Nvl. {{ $page.props.auth.user.level }})</span></span>
                                 </div>
                                 <div class="relative w-full h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700 shadow-inner">
                                     <div
                                         class="h-full rounded-full bg-gradient-to-r transition-all duration-1000 ease-out relative overflow-hidden"
                                         :class="xpBarClass"
-                                        :style="{ width: campaignXP + '%' }"
+                                        :style="{ width: $page.props.auth.user.xp_progress.percentage + '%' }"
                                     >
                                         <!-- shimmer -->
                                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"></div>

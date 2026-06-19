@@ -4,6 +4,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\QuickAttackController;
 use App\Models\Budget;
 use App\Models\Debt;
 use Illuminate\Support\Facades\Route;
@@ -100,6 +101,7 @@ Route::get('/historial', [App\Http\Controllers\BudgetController::class, 'history
 Route::get('/presupuestos/exportar/{id?}', [App\Http\Controllers\BudgetController::class, 'export'])->middleware(['auth', 'verified'])->name('budgets.export');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/quick-attack', [QuickAttackController::class, 'store'])->name('quick-attack.store');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
