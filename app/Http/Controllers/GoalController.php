@@ -48,6 +48,8 @@ class GoalController extends Controller
 
         $this->goalService->addFunds($goal, (float) $validated['amount']);
 
+        $request->user()->addXp(25);
+
         return redirect()->back();
     }
 

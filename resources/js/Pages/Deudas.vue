@@ -175,6 +175,7 @@ const showDeleteModal = ref(false);
 const selectedDebt = ref(null);
 const paymentAmount = ref('');
 const isSubmitting = ref(false);
+const floatingDamages = ref({});
 
 const openPayModal = (debt) => {
     selectedDebt.value = debt;
@@ -246,11 +247,15 @@ const submitPayment = () => {
     router.post(route('debts.pay', selectedDebt.value.id), { amount: amount }, {
         preserveScroll: true,
         onSuccess: () => {
+            const debtId = selectedDebt.value.id;
             if (selectedDebt.value.balance - amount <= 0) {
                 showNotification('¡GOLPE FINAL! El jefe ha sido destruido.', 'success');
             } else {
                 showNotification(`¡Impacto Crítico! Le quitaste ${formatMoney(amount)} de HP.`, 'success');
             }
+            // Trigger floating damage text on the BossCard
+            floatingDamages.value[debtId] = amount;
+            setTimeout(() => { delete floatingDamages.value[debtId]; }, 1500);
             closePayModal();
         },
         onFinish: () => { isSubmitting.value = false; }
@@ -629,6 +634,7 @@ const submitPayment = () => {
                                     :key="debt.id"
                                     :debt="debt"
                                     :index="index"
+                                    :floating-damage="floatingDamages[debt.id] ?? null"
                                     @attack="openPayModal"
                                     @abort="confirmDelete"
                                 />

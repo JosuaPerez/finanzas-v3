@@ -11,6 +11,7 @@ const props = defineProps({
     totalGoalsTarget: { type: Number, default: 0 },
     budgetCount:      { type: Number, default: 0 },
     lastCapitalLibre: { type: Number, default: 0 },
+    combatLog:        { type: Array,  default: () => [] },
 });
 
 const page = usePage();
@@ -301,6 +302,49 @@ const onboardingMission = computed(() => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════════════════
+                     REGISTRO DE BATALLA — Combat Log (recent expenses)
+                ═══════════════════════════════════════════════════════════ -->
+                <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
+                    <div class="absolute -top-12 -right-12 w-40 h-40 bg-violet-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
+
+                    <div class="flex items-center gap-3 mb-5 relative z-10">
+                        <div class="w-9 h-9 bg-violet-500/15 border border-violet-500/30 rounded-xl flex items-center justify-center text-lg">📜</div>
+                        <div>
+                            <p class="text-[10px] font-black tracking-[0.2em] uppercase text-violet-400">Últimas Acciones</p>
+                            <h3 class="text-sm font-black text-white leading-tight">Registro de Batalla</h3>
+                        </div>
+                    </div>
+
+                    <!-- Log entries -->
+                    <div v-if="combatLog.length > 0" class="space-y-2 relative z-10">
+                        <div
+                            v-for="(entry, i) in combatLog"
+                            :key="i"
+                            class="flex items-center justify-between gap-4 px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl"
+                        >
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="text-lg flex-shrink-0">⚡</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-white truncate">{{ entry.description }}</p>
+                                    <p class="text-[11px] text-slate-500">
+                                        <span class="text-violet-400 font-bold">{{ entry.type }}</span>
+                                        <span class="mx-1.5 text-slate-700">·</span>
+                                        {{ entry.time }}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="text-red-400 font-black font-mono text-sm flex-shrink-0">-RD$ {{ formatCurrency(entry.amount) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div v-else class="text-center py-8 relative z-10">
+                        <p class="text-slate-600 text-sm font-medium">El radar está despejado. No hay actividad reciente.</p>
                     </div>
                 </div>
 

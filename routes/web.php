@@ -7,6 +7,7 @@ use App\Http\Controllers\GoalController;
 use App\Http\Controllers\QuickAttackController;
 use App\Models\Budget;
 use App\Models\Debt;
+use App\Models\Expense;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -35,6 +36,17 @@ Route::get('/dashboard', function () {
         $lastCapitalLibre = $details['remaining'] ?? 0;
     }
 
+    $combatLog = Expense::where('user_id', $uid)
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(fn ($e) => [
+            'type'        => 'Ataque Rápido',
+            'description' => $e->description,
+            'amount'      => $e->amount,
+            'time'        => $e->created_at->diffForHumans(),
+        ]);
+
     return Inertia::render('Dashboard', [
         'totalDebts'       => (float) $totalDebts,
         'activeDebtCount'  => (int)   $activeDebtCount,
@@ -42,6 +54,7 @@ Route::get('/dashboard', function () {
         'totalGoalsTarget' => (float) $totalGoalsTarget,
         'budgetCount'      => (int)   $budgetCount,
         'lastCapitalLibre' => (float) $lastCapitalLibre,
+        'combatLog'        => $combatLog,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 

@@ -21,6 +21,10 @@ const props = defineProps({
         type: Number,
         required: true,
     },
+    floatingDamage: {
+        type: Number,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['attack', 'abort']);
@@ -96,6 +100,20 @@ const emit = defineEmits(['attack', 'abort']);
                 <span>{{ debt.type === 'loan' ? 'Cuota Fija' : 'Pago Mínimo' }}: <span class="text-white">{{ getSymbol(debt.currency) }} {{ formatMoney(debt.minimum_payment) }}</span></span>
                 <span v-if="debt.type === 'credit_card' && debt.cutoff_date">Corte: <span class="text-orange-400">{{ debt.cutoff_date }}</span> | Pago: <span class="text-blue-400">{{ debt.payment_date }}</span></span>
             </div>
+
+            <!-- Floating Damage Text -->
+            <Transition
+                enter-active-class="boss-damage-float"
+                leave-active-class="boss-damage-float"
+            >
+                <span
+                    v-if="floatingDamage"
+                    :key="floatingDamage"
+                    class="absolute -top-2 right-4 text-2xl font-black text-red-400 drop-shadow-[0_0_12px_rgba(248,113,113,0.8)] pointer-events-none z-20 boss-damage-float"
+                >
+                    -{{ getSymbol(debt.currency) }} {{ formatMoney(floatingDamage) }}
+                </span>
+            </Transition>
         </div>
 
         <!-- Acciones del Combate -->
@@ -123,3 +141,14 @@ const emit = defineEmits(['attack', 'abort']);
         </div>
     </div>
 </template>
+
+<style scoped>
+.boss-damage-float {
+    animation: floatUpFade 1.5s ease-out forwards;
+}
+@keyframes floatUpFade {
+    0%   { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(-40px); }
+    100% { opacity: 0; transform: translateY(-60px); }
+}
+</style>
