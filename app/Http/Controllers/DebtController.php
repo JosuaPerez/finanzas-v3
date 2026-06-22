@@ -50,10 +50,7 @@ class DebtController extends Controller
 
     public function pay(Request $request, Debt $debt): RedirectResponse
     {
-        // Authorization: only the owner may pay their own debt
-        if ($debt->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('pay', $debt);
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -66,9 +63,7 @@ class DebtController extends Controller
 
     public function destroy(Debt $debt): RedirectResponse
     {
-        if ($debt->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $debt);
 
         $debt->delete();
 

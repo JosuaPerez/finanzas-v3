@@ -91,11 +91,13 @@ Route::get('/deudas', function () {
 })->middleware(['auth', 'verified'])->name('deudas');
 
 // Ruta para guardar nueva deuda
-Route::post('/deudas', [DebtController::class, 'store'])->middleware(['auth', 'verified'])->name('debts.store');
-Route::post('/deudas/{debt}/pagar', [DebtController::class, 'pay'])->middleware(['auth', 'verified'])->name('debts.pay');
-Route::delete('/deudas/{debt}', [DebtController::class, 'destroy'])->middleware(['auth', 'verified'])->name('debts.destroy');
+Route::middleware(['auth', 'verified', 'throttle:30,1'])->group(function () {
+    Route::post('/deudas', [DebtController::class, 'store'])->name('debts.store');
+    Route::post('/deudas/{debt}/pagar', [DebtController::class, 'pay'])->name('debts.pay');
+    Route::delete('/deudas/{debt}', [DebtController::class, 'destroy'])->name('debts.destroy');
+});
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:30,1'])->group(function () {
     // Ruta para ver las metas
     Route::get('/metas', [GoalController::class, 'index'])->name('metas');
     
@@ -105,7 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/metas/{goal}/add-funds', [GoalController::class, 'addFunds'])->name('metas.add_funds');
 });
 
-Route::post('/presupuestos', [BudgetController::class, 'store'])->middleware(['auth', 'verified'])->name('budgets.store');
+Route::post('/presupuestos', [BudgetController::class, 'store'])->middleware(['auth', 'verified', 'throttle:30,1'])->name('budgets.store');
 
 // Ruta para la nueva página de Historial
 Route::get('/historial', [App\Http\Controllers\BudgetController::class, 'history'])->middleware(['auth', 'verified'])->name('historial');
@@ -113,7 +115,7 @@ Route::get('/historial', [App\Http\Controllers\BudgetController::class, 'history
 // Actualizamos la ruta de exportar para que acepte un ID opcional al final ({id?})
 Route::get('/presupuestos/exportar/{id?}', [App\Http\Controllers\BudgetController::class, 'export'])->middleware(['auth', 'verified'])->name('budgets.export');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:30,1'])->group(function () {
     Route::post('/quick-attack', [QuickAttackController::class, 'store'])->name('quick-attack.store');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

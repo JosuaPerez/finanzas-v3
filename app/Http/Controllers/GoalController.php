@@ -37,10 +37,7 @@ class GoalController extends Controller
 
     public function addFunds(Request $request, Goal $goal): RedirectResponse
     {
-        // Authorization: only the owner may fund their own goal
-        if ($goal->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('addFunds', $goal);
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -55,9 +52,7 @@ class GoalController extends Controller
 
     public function destroy(Goal $goal): RedirectResponse
     {
-        if ($goal->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $goal);
 
         $goal->delete();
 
