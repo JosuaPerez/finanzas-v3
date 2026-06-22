@@ -8,6 +8,7 @@ use App\Http\Controllers\QuickAttackController;
 use App\Models\Budget;
 use App\Models\Debt;
 use App\Models\Expense;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,40 +23,43 @@ Route::get('/', function () {
 use App\Models\Goal;
 
 Route::get('/dashboard', function () {
-    $uid = auth()->id();
+    $uid  = auth()->id();
+    $data = Cache::remember('dashboard_data_user_' . $uid, now()->addMinutes(15), function () use ($uid) {
+        $totalDebts       = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
+        $activeDebtCount  = Debt::where('user_id', $uid)->where('balance', '>', 0)->count();
+        $totalGoalsSaved  = Goal::where('user_id', $uid)->sum('current_amount');
+        $totalGoalsTarget = Goal::where('user_id', $uid)->sum('target_amount');
+        $budgetCount      = Budget::where('user_id', $uid)->count();
+        $lastBudget       = Budget::where('user_id', $uid)->latest()->first();
+        $lastCapitalLibre = 0;
+        if ($lastBudget) {
+            $details          = is_string($lastBudget->details) ? json_decode($lastBudget->details, true) : $lastBudget->details;
+            $lastCapitalLibre = $details['remaining'] ?? 0;
+        }
 
-    $totalDebts       = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
-    $activeDebtCount  = Debt::where('user_id', $uid)->where('balance', '>', 0)->count();
-    $totalGoalsSaved  = Goal::where('user_id', $uid)->sum('current_amount');
-    $totalGoalsTarget = Goal::where('user_id', $uid)->sum('target_amount');
-    $budgetCount      = Budget::where('user_id', $uid)->count();
-    $lastBudget       = Budget::where('user_id', $uid)->latest()->first();
-    $lastCapitalLibre = 0;
-    if ($lastBudget) {
-        $details = is_string($lastBudget->details) ? json_decode($lastBudget->details, true) : $lastBudget->details;
-        $lastCapitalLibre = $details['remaining'] ?? 0;
-    }
+        $combatLog = Expense::where('user_id', $uid)
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn ($e) => [
+                'type'        => 'Ataque Rápido',
+                'description' => $e->description,
+                'amount'      => $e->amount,
+                'time'        => $e->created_at->diffForHumans(),
+            ]);
 
-    $combatLog = Expense::where('user_id', $uid)
-        ->latest()
-        ->take(5)
-        ->get()
-        ->map(fn ($e) => [
-            'type'        => 'Ataque Rápido',
-            'description' => $e->description,
-            'amount'      => $e->amount,
-            'time'        => $e->created_at->diffForHumans(),
-        ]);
+        return [
+            'totalDebts'       => (float) $totalDebts,
+            'activeDebtCount'  => (int)   $activeDebtCount,
+            'totalGoalsSaved'  => (float) $totalGoalsSaved,
+            'totalGoalsTarget' => (float) $totalGoalsTarget,
+            'budgetCount'      => (int)   $budgetCount,
+            'lastCapitalLibre' => (float) $lastCapitalLibre,
+            'combatLog'        => $combatLog,
+        ];
+    });
 
-    return Inertia::render('Dashboard', [
-        'totalDebts'       => (float) $totalDebts,
-        'activeDebtCount'  => (int)   $activeDebtCount,
-        'totalGoalsSaved'  => (float) $totalGoalsSaved,
-        'totalGoalsTarget' => (float) $totalGoalsTarget,
-        'budgetCount'      => (int)   $budgetCount,
-        'lastCapitalLibre' => (float) $lastCapitalLibre,
-        'combatLog'        => $combatLog,
-    ]);
+    return Inertia::render('Dashboard', $data);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/presupuesto', function () {

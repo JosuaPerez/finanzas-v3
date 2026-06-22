@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class QuickAttackController extends Controller
 {
@@ -13,6 +14,8 @@ class QuickAttackController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        Cache::forget('dashboard_data_user_' . $request->user()->id);
+
         $validated = $request->validate([
             'monto'       => ['required', 'numeric', 'min:0.01'],
             'descripcion' => ['required', 'string', 'max:255'],

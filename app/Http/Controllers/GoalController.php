@@ -6,6 +6,7 @@ use App\Models\Goal;
 use App\Services\GoalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +23,8 @@ class GoalController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Cache::forget('dashboard_data_user_' . $request->user()->id);
+
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'target_amount'  => 'required|numeric|min:0.01',
@@ -39,6 +42,8 @@ class GoalController extends Controller
     {
         $this->authorize('addFunds', $goal);
 
+        Cache::forget('dashboard_data_user_' . $request->user()->id);
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
         ]);
@@ -53,6 +58,8 @@ class GoalController extends Controller
     public function destroy(Goal $goal): RedirectResponse
     {
         $this->authorize('delete', $goal);
+
+        Cache::forget('dashboard_data_user_' . auth()->id());
 
         $goal->delete();
 

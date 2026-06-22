@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Budget;
 use App\Exports\BudgetExport;
+use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Facades\Excel;
 
 class BudgetController extends Controller
 {
     public function store(Request $request)
     {
+        Cache::forget('dashboard_data_user_' . auth()->id());
+
         // 1. Validar que la información esté correcta
         $request->validate([
             'title' => 'required|string|max:255',

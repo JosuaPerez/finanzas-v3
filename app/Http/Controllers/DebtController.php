@@ -6,6 +6,7 @@ use App\Models\Debt;
 use App\Services\DebtService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 
 class DebtController extends Controller
 {
@@ -13,6 +14,8 @@ class DebtController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Cache::forget('dashboard_data_user_' . $request->user()->id);
+
         $request->validate([
             'name'                  => 'required|string|max:255',
             'balance'               => 'required|numeric|min:0',
@@ -52,6 +55,8 @@ class DebtController extends Controller
     {
         $this->authorize('pay', $debt);
 
+        Cache::forget('dashboard_data_user_' . $request->user()->id);
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
         ]);
@@ -64,6 +69,8 @@ class DebtController extends Controller
     public function destroy(Debt $debt): RedirectResponse
     {
         $this->authorize('delete', $debt);
+
+        Cache::forget('dashboard_data_user_' . auth()->id());
 
         $debt->delete();
 
