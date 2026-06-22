@@ -5,7 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
-use Laravel\Pulse\Pulse;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,8 +29,8 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        Pulse::auth(function (Request $request) {
-            return $request->user()?->email === 'josuap63@gmail.com';
+        Gate::define('viewPulse', function (User $user) {
+            return $user->email === env('PULSE_ADMIN_EMAIL');
         });
     }
 }
