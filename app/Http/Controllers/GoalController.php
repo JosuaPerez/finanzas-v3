@@ -7,6 +7,7 @@ use App\Services\GoalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,7 +41,7 @@ class GoalController extends Controller
 
     public function addFunds(Request $request, Goal $goal): RedirectResponse
     {
-        $this->authorize('addFunds', $goal);
+        Gate::authorize('addFunds', $goal);
 
         Cache::forget('dashboard_data_user_' . $request->user()->id);
 
@@ -57,7 +58,7 @@ class GoalController extends Controller
 
     public function destroy(Goal $goal): RedirectResponse
     {
-        $this->authorize('delete', $goal);
+        Gate::authorize('delete', $goal);
 
         Cache::forget('dashboard_data_user_' . auth()->id());
 

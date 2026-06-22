@@ -7,6 +7,7 @@ use App\Services\DebtService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 
 class DebtController extends Controller
 {
@@ -53,7 +54,7 @@ class DebtController extends Controller
 
     public function pay(Request $request, Debt $debt): RedirectResponse
     {
-        $this->authorize('pay', $debt);
+        Gate::authorize('pay', $debt);
 
         Cache::forget('dashboard_data_user_' . $request->user()->id);
 
@@ -68,7 +69,7 @@ class DebtController extends Controller
 
     public function destroy(Debt $debt): RedirectResponse
     {
-        $this->authorize('delete', $debt);
+        Gate::authorize('delete', $debt);
 
         Cache::forget('dashboard_data_user_' . auth()->id());
 
