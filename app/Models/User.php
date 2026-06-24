@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\CustomResetPassword;
+use App\Models\CampaignBoss;
 use App\Models\Debt;
 use App\Models\Goal;
 use App\Traits\SurvivalMechanics;
@@ -137,4 +138,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Debt::class);
     }
+
+    public function campaignBosses(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CampaignBoss::class);
+    }
 }
+

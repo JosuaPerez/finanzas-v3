@@ -14,13 +14,13 @@ class CombatTest extends TestCase
     /**
      * Prueba 1: Verificar la redirección de la puerta principal.
      */
-    public function test_la_raiz_redirige_al_login(): void
+    public function test_la_raiz_muestra_welcome(): void
     {
         // Simulamos que un usuario entra a tu-pagina.com/
         $response = $this->get('/');
 
-        // Afirmamos (Assert) que la aplicación lo redirigió al /login
-        $response->assertRedirect('/login');
+        // Afirmamos (Assert) que carga la página de bienvenida (Welcome)
+        $response->assertStatus(200);
     }
 
     /**

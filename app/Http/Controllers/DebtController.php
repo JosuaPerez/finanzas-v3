@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Debt;
+use App\Services\BpdExchangeRateService;
 use App\Services\DebtService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -11,7 +12,10 @@ use Illuminate\Support\Facades\Gate;
 
 class DebtController extends Controller
 {
-    public function __construct(private readonly DebtService $debtService) {}
+    public function __construct(
+        private readonly DebtService            $debtService,
+        private readonly BpdExchangeRateService $rateService,
+    ) {}
 
     public function store(Request $request): RedirectResponse
     {
@@ -61,6 +65,33 @@ class DebtController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
         ]);
+
+        // ── Ammunition (Capital Libre) guard ─────────────────────────────────
+        // Fetch available capital from the user's latest budget.
+        // If no budget exists, $capitalLibre stays 0 and the guard is skipped
+        // so users without a budget aren't hard-blocked.
+        $budget       = \App\Models\Budget::where('user_id', $request->user()->id)
+            ->latest()
+            ->first();
+        $details      = $budget
+            ? (is_string($budget->details)
+                ? json_decode($budget->details, true)
+                : (array) $budget->details)
+            : [];
+        $capitalLibre = (float) ($details['remaining'] ?? 0);
+
+        // If the debt is in USD, convert the payment amount to DOP before
+        // comparing against the DOP-denominated capital libre.
+        $exchangeRate = $this->rateService->getUsdSellRate();
+        $dopCost      = $debt->currency === 'USD'
+            ? (float) $validated['amount'] * $exchangeRate
+            : (float) $validated['amount'];
+
+        if ($capitalLibre > 0 && $dopCost > $capitalLibre) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'municion' => 'Munición insuficiente (Capital Libre) para este ataque.',
+            ]);
+        }
 
         $this->debtService->applyPayment($debt, (float) $validated['amount']);
 

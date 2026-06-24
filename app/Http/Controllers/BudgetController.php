@@ -39,7 +39,17 @@ class BudgetController extends Controller
     public function history()
     {
         $misPresupuestos = \App\Models\Budget::where('user_id', auth()->id())->latest()->get();
-        return inertia('Historial', ['budgets' => $misPresupuestos]);
+
+        // Debts that have been fully paid off (balance brought to 0 or below)
+        $defeatedBosses = \App\Models\Debt::where('user_id', auth()->id())
+            ->where('balance', '<=', 0)
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return inertia('Historial', [
+            'budgets'         => $misPresupuestos,
+            'defeated_bosses' => $defeatedBosses,
+        ]);
     }
 
     // Ahora acepta un ID para descargar cualquier Excel

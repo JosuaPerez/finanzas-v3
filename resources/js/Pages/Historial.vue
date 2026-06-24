@@ -4,12 +4,26 @@ import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { formatMoney as fmtMoney, getSymbol } from '@/composables/useDebtUtils';
 
 const props = defineProps({
-    budgets: Array
+    budgets:         Array,
+    defeated_bosses: { type: Array, default: () => [] },
 });
 
+// Re-export the shared formatter (keeps existing template bindings working)
 const formatMoney = (amount) => Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Returns the most meaningful "Max HP" figure for a defeated boss.
+ * Loans  → original_amount  (the full principal at inception)
+ * Cards  → credit_limit     (the approved spending ceiling)
+ */
+const getMaxHp = (debt) => {
+    if (debt.type === 'loan')        return Number(debt.original_amount) || 0;
+    if (debt.type === 'credit_card') return Number(debt.credit_limit)    || 0;
+    return 0;
+};
 
 // 🛠️ FUNCIONES DE DESCOMPRESIÓN SEGURAS
 const parseDetails = (details) => {
@@ -156,6 +170,77 @@ const downloadExcel = (id) => {
 
                 </div>
             </div>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 💀 HALL OF FAME — Enemigos Vencidos
+                 Shown only when at least one debt has been fully paid off.
+            ═══════════════════════════════════════════════════════════════ -->
+            <div v-if="defeated_bosses.length > 0" class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
+
+                <!-- Section panel -->
+                <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-emerald-900/40 ring-1 ring-white/5 relative">
+
+                    <!-- Victory accent line (emerald instead of amber) -->
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+
+                    <!-- Section header -->
+                    <div class="flex items-start justify-between mb-6">
+                        <div>
+                            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">SALA DE TROFEOS</p>
+                            <h2 class="text-2xl font-black text-white tracking-tight">💀 Enemigos Vencidos</h2>
+                            <p class="text-slate-400 text-sm font-medium mt-1">Jefes que cayeron ante tu disciplina financiera.</p>
+                        </div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-1.5 rounded-lg shrink-0 ml-4">
+                            {{ defeated_bosses.length }} {{ defeated_bosses.length === 1 ? 'jefe' : 'jefes' }} eliminados
+                        </div>
+                    </div>
+
+                    <!-- Trophy cards grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div
+                            v-for="boss in defeated_bosses"
+                            :key="boss.id"
+                            class="bg-slate-950/60 border border-emerald-900/50 rounded-2xl p-4 flex items-start gap-4 hover:border-emerald-700/60 transition-all duration-300 group relative overflow-hidden"
+                        >
+                            <!-- Subtle inner glow on hover -->
+                            <div class="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors duration-300 rounded-2xl pointer-events-none"></div>
+
+                            <!-- Type icon -->
+                            <div class="text-3xl shrink-0 relative z-10">
+                                {{ boss.type === 'credit_card' ? '👾' : '👹' }}
+                            </div>
+
+                            <!-- Info -->
+                            <div class="flex-1 min-w-0 relative z-10">
+                                <p class="font-black text-white truncate text-sm">{{ boss.name }}</p>
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-0.5">
+                                    {{ boss.type === 'credit_card' ? 'Tarjeta de Crédito' : 'Préstamo' }}
+                                    &middot; {{ boss.currency }}
+                                </p>
+
+                                <!-- Max HP row -->
+                                <div v-if="getMaxHp(boss) > 0" class="mt-2.5 flex items-center gap-1.5">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Max HP:</span>
+                                    <span class="text-xs text-slate-200 font-black font-mono">
+                                        {{ getSymbol(boss.currency) }} {{ formatMoney(getMaxHp(boss)) }}
+                                    </span>
+                                </div>
+
+                                <!-- Defeat date -->
+                                <p class="text-[10px] text-slate-600 font-bold mt-1.5 uppercase tracking-wider">
+                                    Derrotado: {{ new Date(boss.updated_at).toLocaleDateString('es-DO') }}
+                                </p>
+                            </div>
+
+                            <!-- Vencido badge -->
+                            <span class="relative z-10 shrink-0 self-start text-[10px] font-black uppercase tracking-widest bg-emerald-900/50 text-emerald-400 border border-emerald-500/40 px-2 py-1 rounded-lg whitespace-nowrap">
+                                ✓ Vencido
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- ===================== MODAL DE DETALLES ===================== -->

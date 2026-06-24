@@ -308,3 +308,108 @@ test('test_otro_usuario_no_puede_pagar_deuda_ajena', function () {
         'balance' => 15000, // zero damage — the intruder failed
     ]);
 });
+
+// ─── AMMUNITION / BUDGET VALIDATION GUARD ─────────────────────────────────────
+
+it('throws a municion validation error when a DOP attack exceeds available capital libre', function () {
+    $user = User::factory()->create();
+
+    Budget::create([
+        'user_id'              => $user->id,
+        'title'                => 'Presupuesto Bajo',
+        'income'               => 30000,
+        'fixed_expenses_total' => 25000,
+        'details'              => json_encode(['remaining' => 5000]),
+    ]);
+
+    $debt = Debt::create([
+        'user_id'         => $user->id,
+        'name'            => 'Deuda DOP Mayor',
+        'balance'         => 20000,
+        'type'            => 'loan',
+        'currency'        => 'DOP',
+        'interest_rate'   => 10,
+        'minimum_payment' => 1000,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('debts.pay', $debt->id), ['amount' => 6000])
+        ->assertInvalid(['municion' => 'Munición insuficiente (Capital Libre) para este ataque.']);
+});
+
+it('throws a municion validation error when a USD attack converted to DOP exceeds available capital libre', function () {
+    $user = User::factory()->create();
+
+    // Fallback rate is 60.50. Let's make remaining = 5000 DOP.
+    // An attack of 100 USD = 6050 DOP > 5000 DOP.
+    Budget::create([
+        'user_id'              => $user->id,
+        'title'                => 'Presupuesto USD',
+        'income'               => 30000,
+        'fixed_expenses_total' => 25000,
+        'details'              => json_encode(['remaining' => 5000]),
+    ]);
+
+    $debt = Debt::create([
+        'user_id'         => $user->id,
+        'name'            => 'Deuda USD Mayor',
+        'balance'         => 500,
+        'type'            => 'credit_card',
+        'currency'        => 'USD',
+        'interest_rate'   => 10,
+        'minimum_payment' => 50,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('debts.pay', $debt->id), ['amount' => 100])
+        ->assertInvalid(['municion' => 'Munición insuficiente (Capital Libre) para este ataque.']);
+});
+
+it('allows a USD attack when the converted DOP cost is within available capital libre', function () {
+    $user = User::factory()->create();
+
+    // Fallback rate is 60.50. Let's make remaining = 10000 DOP.
+    // An attack of 100 USD = 6050 DOP <= 10000 DOP.
+    Budget::create([
+        'user_id'              => $user->id,
+        'title'                => 'Presupuesto Suficiente USD',
+        'income'               => 50000,
+        'fixed_expenses_total' => 20000,
+        'details'              => json_encode(['remaining' => 10000]),
+    ]);
+
+    $debt = Debt::create([
+        'user_id'         => $user->id,
+        'name'            => 'Deuda USD Menor',
+        'balance'         => 500,
+        'type'            => 'credit_card',
+        'currency'        => 'USD',
+        'interest_rate'   => 10,
+        'minimum_payment' => 50,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('debts.pay', $debt->id), ['amount' => 100])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+});
+
+it('bypasses the ammunition guard when the user has no budget or capital libre is zero', function () {
+    $user = User::factory()->create();
+
+    // No budget created for $user
+    $debt = Debt::create([
+        'user_id'         => $user->id,
+        'name'            => 'Deuda Sin Presupuesto',
+        'balance'         => 5000,
+        'type'            => 'loan',
+        'currency'        => 'DOP',
+        'interest_rate'   => 10,
+        'minimum_payment' => 500,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('debts.pay', $debt->id), ['amount' => 1000])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+});

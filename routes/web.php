@@ -75,7 +75,7 @@ Route::get('/presupuesto', function () {
 
 Route::get('/deudas', function () {
     // 1. Buscamos las deudas
-    $misDeudas = Debt::where('user_id', auth()->id())->get();
+    $misDeudas = Debt::where('user_id', auth()->id())->where('balance', '>', 0)->get();
 
     // 2. Buscamos el último presupuesto guardado para extraer las municiones
     $ultimoPresupuesto = Budget::where('user_id', auth()->id())->latest()->first();
@@ -89,8 +89,9 @@ Route::get('/deudas', function () {
 
     // 3. Enviamos todo a Vue
     return Inertia::render('Deudas', [
-        'debts' => $misDeudas,
-        'ammunition' => $capitalLibre, // <-- Aquí van las municiones
+        'debts'             => $misDeudas,
+        'ammunition'        => $capitalLibre,       // Capital Libre del último presupuesto
+        'usd_exchange_rate' => app(\App\Services\BpdExchangeRateService::class)->getUsdSellRate(),
     ]);
 })->middleware(['auth', 'verified'])->name('deudas');
 

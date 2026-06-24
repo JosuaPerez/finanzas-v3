@@ -8,8 +8,9 @@ import { ref, computed, watch } from 'vue';
 import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 const props = defineProps({
-    debts: Array,
-    ammunition: { type: Number, default: 0 } // Tu Capital Libre
+    debts:             Array,
+    ammunition:        { type: Number, default: 0 },  // Capital Libre del último presupuesto (DOP)
+    usd_exchange_rate: { type: Number, default: 59.50 }, // Tasa de cambio USD→DOP
 });
 
 const form = ref({
@@ -176,13 +177,39 @@ const selectedDebt = ref(null);
 const paymentAmount = ref('');
 const isSubmitting = ref(false);
 const floatingDamages = ref({});
+const payErrors = ref({});
+
+// ── Payment modal computed ────────────────────────────────────────────────────
+
+/**
+ * DOP-equivalent cost of the typed amount, currency-aware.
+ * USD debts are converted using the exchange rate prop before being
+ * compared against the DOP-denominated capital libre (ammunition).
+ */
+const dopCost = computed(() => {
+    const amount = cleanNum(paymentAmount.value);
+    if (!amount) return 0;
+    return selectedDebt.value?.currency === 'USD'
+        ? amount * props.usd_exchange_rate
+        : amount;
+});
+
+/** True when the DOP cost of the attack exceeds available capital. */
+const isOverAmmo = computed(() =>
+    props.ammunition > 0 && dopCost.value > props.ammunition
+);
 
 const openPayModal = (debt) => {
     selectedDebt.value = debt;
     paymentAmount.value = debt.minimum_payment ? debt.minimum_payment.toString() : '';
     showPayModal.value = true;
 };
-const closePayModal = () => { showPayModal.value = false; selectedDebt.value = null; paymentAmount.value = ''; };
+const closePayModal = () => {
+    showPayModal.value  = false;
+    selectedDebt.value  = null;
+    paymentAmount.value = '';
+    payErrors.value     = {}; // clear stale backend errors each time modal closes
+};
 
 const confirmDelete = (debt) => {
     selectedDebt.value = debt;
@@ -244,7 +271,8 @@ const submitPayment = () => {
     }
 
     isSubmitting.value = true;
-    router.post(route('debts.pay', selectedDebt.value.id), { amount: amount }, {
+    payErrors.value    = {}; // reset stale errors before each attempt
+    router.post(route('debts.pay', selectedDebt.value.id), { amount }, {
         preserveScroll: true,
         onSuccess: () => {
             const debtId = selectedDebt.value.id;
@@ -258,6 +286,7 @@ const submitPayment = () => {
             setTimeout(() => { delete floatingDamages.value[debtId]; }, 1500);
             closePayModal();
         },
+        onError: (errors) => { payErrors.value = errors; },
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -682,13 +711,60 @@ const submitPayment = () => {
                                     class="block w-full rounded-2xl border-slate-600 bg-slate-800 text-white pl-16 py-5 text-2xl font-mono focus:border-red-500 focus:ring-red-500 shadow-inner"
                                     placeholder="0.00">
                             </div>
+
+                            <!-- USD conversion hint —— shown only for USD debts with a typed amount -->
+                            <Transition
+                                enter-active-class="transition-all duration-300 ease-out"
+                                enter-from-class="opacity-0 -translate-y-1"
+                                enter-to-class="opacity-100 translate-y-0"
+                                leave-active-class="transition-all duration-200 ease-in"
+                                leave-from-class="opacity-100"
+                                leave-to-class="opacity-0"
+                            >
+                                <p v-if="selectedDebt?.currency === 'USD' && cleanNum(paymentAmount) > 0"
+                                    class="mt-3 text-sm text-blue-400 font-medium leading-relaxed">
+                                    Equivalente a <strong class="font-mono text-blue-300">RD$ {{ formatMoney(dopCost) }}</strong>.
+                                    Tasa de referencia ({{ usd_exchange_rate }}).
+                                    <span class="text-slate-500">Puede variar en cualquier momento.</span>
+                                </p>
+                            </Transition>
+
+                            <!-- Over-ammo warning —— shown when typed amount exceeds capital libre -->
+                            <Transition
+                                enter-active-class="transition-all duration-300 ease-out"
+                                enter-from-class="opacity-0 -translate-y-1"
+                                enter-to-class="opacity-100 translate-y-0"
+                                leave-active-class="transition-all duration-200 ease-in"
+                                leave-from-class="opacity-100"
+                                leave-to-class="opacity-0"
+                            >
+                                <div v-if="isOverAmmo"
+                                    class="mt-3 flex items-center gap-2 p-3 bg-amber-900/40 border border-amber-500/50 rounded-xl">
+                                    <span class="text-base shrink-0">⚠️</span>
+                                    <p class="text-amber-300 text-xs font-bold leading-relaxed">
+                                        Munición insuficiente. Capital disponible:
+                                        <span class="font-mono">RD$ {{ formatMoney(ammunition) }}</span>
+                                    </p>
+                                </div>
+                            </Transition>
+
+                            <!-- Backend municion error (server-side catch) -->
+                            <div v-if="payErrors.municion"
+                                class="mt-3 flex items-center gap-2 p-3 bg-red-900/40 border border-red-500/50 rounded-xl">
+                                <span class="text-base shrink-0">🚫</span>
+                                <p class="text-red-300 text-xs font-bold">{{ payErrors.municion }}</p>
+                            </div>
+
                             <p class="text-[10px] text-slate-500 mt-3 font-bold uppercase tracking-wider">* Cargado con el ataque mínimo por defecto.</p>
                         </div>
                     </div>
                     <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="submitPayment"
-                            :disabled="isSubmitting"
-                            :class="{ 'opacity-70 cursor-wait pointer-events-none': isSubmitting }"
+                            :disabled="isSubmitting || isOverAmmo"
+                            :class="{
+                                'opacity-70 cursor-wait !pointer-events-none': isSubmitting,
+                                'opacity-50 cursor-not-allowed !pointer-events-none': isOverAmmo && !isSubmitting,
+                            }"
                             class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                             💥 Lanzar Ataque
                         </button>

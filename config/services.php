@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // ── Banco Popular Dominicano (BPD) Exchange Rate API ─────────────────────
+    'bpd' => [
+        'base_url'      => env('BPD_API_BASE_URL'),
+        'client_id'     => env('BPD_CLIENT_ID'),
+        'client_secret' => env('BPD_CLIENT_SECRET'),
+    ],
+
 ];
