@@ -351,7 +351,7 @@ const onboardingMission = computed(() => {
                 <!-- ══════════════════════════════════════════════════════════
                      BRIEFING DEL COMANDANTE — quick-action cards
                 ═══════════════════════════════════════════════════════════ -->
-                <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
+                <div class="hidden lg:block bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
                     <!-- Ambient orbs -->
                     <div class="absolute inset-0 pointer-events-none overflow-hidden">
                         <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>

@@ -88,7 +88,7 @@ onUnmounted(() => {
                                 <span class="text-white font-black tracking-tight hidden sm:block">Finanzas<span class="text-blue-400">RPG</span></span>
                             </Link>
 
-                            <div v-if="!route().current('dashboard')" class="hidden sm:flex items-center gap-1">
+                            <div v-if="!route().current('dashboard')" class="hidden lg:flex items-center gap-1">
                                 <Link :href="route('presupuesto')"
                                     :class="route().current('presupuesto') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
                                     class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
@@ -116,7 +116,7 @@ onUnmounted(() => {
                         <div class="flex items-center gap-3">
 
                             <!-- Desktop user dropdown -->
-                            <div ref="userMenuRef" class="relative hidden sm:block">
+                            <div ref="userMenuRef" class="relative hidden lg:block">
                                 <button
                                     id="user-menu-trigger"
                                     @click="isUserMenuOpen = !isUserMenuOpen"
@@ -133,7 +133,7 @@ onUnmounted(() => {
                                     <div class="w-7 h-7 rounded-lg bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 text-xs font-black flex-shrink-0">
                                         {{ page.props.auth.user.name.charAt(0).toUpperCase() }}
                                     </div>
-                                    <span class="hidden md:block max-w-[120px] truncate">{{ page.props.auth.user.name }}</span>
+                                    <span class="hidden lg:block max-w-[120px] truncate">{{ page.props.auth.user.name }}</span>
                                     <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" :class="{ 'rotate-180': isUserMenuOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                     </svg>
@@ -188,7 +188,7 @@ onUnmounted(() => {
 
                             <!-- Mobile hamburger — hidden on mobile (replaced by bottom nav), visible on sm only if needed -->
                             <button @click="openSidebar"
-                                class="hidden sm:inline-flex md:hidden items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                                class="inline-flex lg:hidden items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
                                 <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
@@ -205,7 +205,7 @@ onUnmounted(() => {
                 enter-from-class="opacity-0" enter-to-class="opacity-100"
                 leave-active-class="transition-opacity ease-linear duration-300"
                 leave-from-class="opacity-100" leave-to-class="opacity-0">
-                <div v-if="isSidebarOpen" @click="closeSidebar" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 sm:hidden"></div>
+                <div v-if="isSidebarOpen" @click="closeSidebar" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[60] lg:hidden"></div>
             </transition>
 
             <!-- ═══ MOBILE SIDEBAR PANEL ═══ -->
@@ -215,7 +215,7 @@ onUnmounted(() => {
                 leave-active-class="transition ease-in-out duration-300 transform"
                 leave-from-class="translate-x-0" leave-to-class="-translate-x-full">
 
-                <div v-if="isSidebarOpen" class="fixed inset-y-0 left-0 w-72 bg-slate-900 shadow-2xl z-50 sm:hidden flex flex-col border-r border-slate-800">
+                <div v-if="isSidebarOpen" class="fixed inset-y-0 left-0 w-72 bg-slate-900/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.5)] z-[60] lg:hidden flex flex-col border-r border-slate-800">
 
                     <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
                         <div class="flex items-center gap-2">
@@ -251,21 +251,6 @@ onUnmounted(() => {
                     </div>
 
                     <div class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                        <Link :href="route('presupuesto')" @click="closeSidebar"
-                              :class="route().current('presupuesto') ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                              class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border">
-                            <span>🛡️</span> Presupuesto
-                        </Link>
-                        <Link :href="route('deudas')" @click="closeSidebar"
-                              :class="route().current('deudas') ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                              class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border">
-                            <span>🔥</span> Deudas
-                        </Link>
-                        <Link :href="route('metas')" @click="closeSidebar"
-                              :class="route().current('metas') ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                              class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border">
-                            <span>🎯</span> Metas
-                        </Link>
                         <Link :href="route('historial')" @click="closeSidebar"
                               :class="route().current('historial') ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
                               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border">
@@ -273,11 +258,7 @@ onUnmounted(() => {
                         </Link>
                     </div>
 
-                    <div class="p-4 border-t border-slate-800 space-y-1">
-                        <Link :href="route('profile.edit')" @click="closeSidebar"
-                              class="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-bold transition-colors">
-                            <span>⚙️</span> Base de Operaciones
-                        </Link>
+                    <div class="p-4 border-t border-slate-800">
                         <button @click="logout"
                               class="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl text-sm font-bold transition-colors">
                             <span>🚪</span> Abortar Misión
@@ -293,13 +274,13 @@ onUnmounted(() => {
                 </div>
             </header>
 
-            <main class="pb-24 md:pb-0">
+            <main class="pb-24 lg:pb-0">
                 <slot />
             </main>
 
             <!-- ═══ MOBILE BOTTOM NAVIGATION BAR ═══ -->
             <nav
-                class="fixed bottom-0 left-0 right-0 w-full bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex justify-around items-center z-50 md:hidden"
+                class="fixed bottom-0 left-0 right-0 w-full bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex justify-around items-center z-50 lg:hidden"
                 style="padding-bottom: env(safe-area-inset-bottom, 0px); padding-top: 0.75rem;"
             >
                 <!-- Dashboard -->
@@ -374,6 +355,24 @@ onUnmounted(() => {
                         :class="route().current('metas') ? 'text-emerald-400' : 'text-slate-600'"
                     >Metas</span>
                     <span v-if="route().current('metas')" class="w-1 h-1 rounded-full bg-emerald-400 mt-0.5"></span>
+                    <span v-else class="w-1 h-1 mt-0.5"></span>
+                </Link>
+
+                <!-- Perfil -->
+                <Link
+                    id="bottom-nav-perfil"
+                    :href="route('profile.edit')"
+                    :class="route().current('profile.edit') ? 'text-violet-400' : 'text-slate-500'"
+                    class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-wider"
+                        :class="route().current('profile.edit') ? 'text-violet-400' : 'text-slate-600'"
+                    >Perfil</span>
+                    <span v-if="route().current('profile.edit')" class="w-1 h-1 rounded-full bg-violet-400 mt-0.5"></span>
                     <span v-else class="w-1 h-1 mt-0.5"></span>
                 </Link>
             </nav>

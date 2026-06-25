@@ -423,7 +423,7 @@ const submitPayment = () => {
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-slate-400 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.balance" v-money
+                                            <input type="text" v-model="form.balance" v-money inputmode="decimal"
                                                 :class="focusRing"
                                                 class="w-full bg-slate-950 border border-red-900/60 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
                                                 placeholder="0.00">
@@ -437,7 +437,7 @@ const submitPayment = () => {
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-blue-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.original_amount" v-money
+                                            <input type="text" v-model="form.original_amount" v-money inputmode="decimal"
                                                 class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
                                                 placeholder="0.00">
                                         </div>
@@ -452,7 +452,7 @@ const submitPayment = () => {
                                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                         <span class="text-orange-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                                     </div>
-                                                    <input type="text" v-model="form.credit_limit" v-money
+                                                    <input type="text" v-model="form.credit_limit" v-money inputmode="decimal"
                                                         class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                         placeholder="0.00">
                                                 </div>
@@ -460,7 +460,7 @@ const submitPayment = () => {
                                             <div class="col-span-1">
                                                 <label class="block text-[10px] font-bold text-orange-400 mb-1.5 uppercase tracking-wider">% Sobregiro</label>
                                                 <div class="relative">
-                                                    <input type="number" v-model="form.overdraft_percentage"
+                                                    <input type="number" v-model="form.overdraft_percentage" inputmode="decimal"
                                                         class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pr-7 pl-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                         placeholder="10">
                                                     <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
@@ -472,13 +472,13 @@ const submitPayment = () => {
                                         <div class="grid grid-cols-2 gap-3">
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Corte</label>
-                                                <input type="number" v-model="form.cutoff_date" min="1" max="31"
+                                                <input type="number" v-model="form.cutoff_date" min="1" max="31" inputmode="numeric"
                                                     class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                     placeholder="Ej: 15">
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Pago</label>
-                                                <input type="number" v-model="form.payment_date" min="1" max="31"
+                                                <input type="number" v-model="form.payment_date" min="1" max="31" inputmode="numeric"
                                                     class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                     placeholder="Ej: 5">
                                             </div>
@@ -497,7 +497,7 @@ const submitPayment = () => {
                                         <div>
                                             <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">⚔️ Tasa Anual</label>
                                             <div class="relative">
-                                                <input type="number" v-model="form.interest_rate"
+                                                <input type="number" v-model="form.interest_rate" inputmode="decimal"
                                                     :class="focusRing"
                                                     class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-3 pr-8 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
                                                     placeholder="0">
@@ -512,7 +512,7 @@ const submitPayment = () => {
                                             <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
                                                 {{ form.type === 'loan' ? '🗡️ Cuota Fija' : '🛡️ Pago Mínimo' }}
                                             </label>
-                                            <input type="text" v-model="form.minimum_payment" v-money
+                                            <input type="text" v-model="form.minimum_payment" v-money inputmode="decimal"
                                                 :class="focusRing"
                                                 class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
                                                 placeholder="0.00">
@@ -528,7 +528,7 @@ const submitPayment = () => {
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">🗓️ Duración (meses)</label>
-                                            <input type="number" v-model="form.plazo_original_meses" min="1" max="600"
+                                            <input type="number" v-model="form.plazo_original_meses" min="1" max="600" inputmode="numeric"
                                                 class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
                                                 placeholder="Ej: 60">
                                         </div>
@@ -627,7 +627,7 @@ const submitPayment = () => {
 
                         <!-- HUD: Municiones -->
                         <div v-if="ammunition > 0"
-                            class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden">
+                            class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden sticky top-4 z-20 shadow-slate-900/50">
                             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
                             <div class="flex items-center gap-4 mb-3 sm:mb-0 relative z-10">
                                 <div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/50 text-2xl shadow-[0_0_15px_rgba(37,99,235,0.4)]">🔋</div>
@@ -707,7 +707,7 @@ const submitPayment = () => {
                                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                     <span class="text-slate-400 font-bold text-xl">{{ getSymbol(selectedDebt?.currency) }}</span>
                                 </div>
-                                <input type="text" v-model="paymentAmount" v-money autofocus
+                                <input type="text" v-model="paymentAmount" v-money autofocus inputmode="decimal"
                                     class="block w-full rounded-2xl border-slate-600 bg-slate-800 text-white pl-16 py-5 text-2xl font-mono focus:border-red-500 focus:ring-red-500 shadow-inner"
                                     placeholder="0.00">
                             </div>

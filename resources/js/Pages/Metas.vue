@@ -188,7 +188,7 @@ const submitForge = () => {
                                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <span class="text-slate-500 font-bold">{{ getSymbol(form.currency) }}</span>
                                         </div>
-                                        <input type="text" v-model="form.target_amount" v-money
+                                        <input type="text" v-model="form.target_amount" v-money inputmode="decimal"
                                             class="w-full bg-slate-950 text-white rounded-xl border-slate-700 pl-14 py-3 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-600 font-mono text-lg"
                                             placeholder="0.00">
                                     </div>
@@ -201,7 +201,7 @@ const submitForge = () => {
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-emerald-600 font-bold">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.current_amount" v-money
+                                            <input type="text" v-model="form.current_amount" v-money inputmode="decimal"
                                                 class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-emerald-500 font-mono"
                                                 placeholder="0.00">
                                         </div>
@@ -228,7 +228,7 @@ const submitForge = () => {
 
                         <!-- HUD: Municiones (Recursos Disponibles) -->
                         <div v-if="ammunition > 0"
-                            class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden">
+                            class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden sticky top-4 z-20 shadow-slate-900/50">
                             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
                             <div class="flex items-center gap-4 mb-3 sm:mb-0 relative z-10">
                                 <div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/50 text-2xl shadow-[0_0_15px_rgba(37,99,235,0.4)]">🔋</div>
@@ -361,7 +361,7 @@ const submitForge = () => {
                                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                     <span class="text-emerald-500 font-bold text-xl">➕</span>
                                 </div>
-                                <input type="text" v-model="forgeAmount" v-money autofocus
+                                <input type="text" v-model="forgeAmount" v-money autofocus inputmode="decimal"
                                     class="block w-full rounded-2xl border-slate-600 bg-slate-950 text-emerald-400 pl-14 py-5 text-2xl font-mono font-black focus:border-emerald-500 focus:ring-emerald-500 shadow-inner"
                                     placeholder="0.00">
                             </div>

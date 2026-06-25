@@ -115,7 +115,7 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                                     <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                         <span class="text-slate-500 font-bold sm:text-xl">RD$</span>
                                     </div>
-                                    <input type="text" v-model="income" v-money
+                                    <input type="text" v-model="income" v-money inputmode="decimal"
                                         class="block w-full bg-slate-800 text-white rounded-xl border-slate-700 pl-16 py-4 text-xl font-mono focus:border-blue-500 focus:ring-blue-500 shadow-inner"
                                         placeholder="0.00">
                                 </div>
@@ -134,7 +134,7 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                                             placeholder="Concepto (Ej. Luz)">
                                         <div class="flex items-center w-full md:w-1/2 gap-2">
                                             <span class="text-slate-500 font-bold ml-2 md:ml-0">RD$</span>
-                                            <input type="text" v-model="gasto.amount" v-money
+                                            <input type="text" v-model="gasto.amount" v-money inputmode="decimal"
                                                 class="w-full bg-slate-800 text-white border-slate-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                                                 placeholder="0.00">
                                             <span class="bg-slate-950 text-slate-400 px-2 py-2 rounded-lg text-xs font-bold min-w-[3.5rem] text-center border border-slate-800">
