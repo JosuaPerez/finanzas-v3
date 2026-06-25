@@ -76,7 +76,7 @@ const submit = () => {
         </div>
 
         <div class="z-10 mt-8 text-slate-400 text-xs font-medium">
-            &copy; {{ new Date().getFullYear() }} Finanzas de Combate. Todos los derechos reservados.
+            &copy; {{ new Date().getFullYear() }} FinanzasRPG. Todos los derechos reservados.
         </div>
     </div>
 </template>

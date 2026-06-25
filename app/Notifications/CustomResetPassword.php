@@ -34,7 +34,7 @@ class CustomResetPassword extends Notification
         return (new MailMessage)
                     ->subject('🛡️ Restablecer Coordenadas de Acceso')
                     ->greeting('¡Atención, Soldado!')
-                    ->line('Recibimos una solicitud de emergencia para restablecer tu contraseña en Finanzas de Combate.')
+                    ->line('Recibimos una solicitud de emergencia para restablecer tu contraseña en FinanzasRPG.')
                     ->action('🔑 Generar Nueva Clave', $url)
                     ->line('Este enlace de seguridad se autodestruirá en 60 minutos.')
                     ->line('Si no solicitaste este rescate, ignora este mensaje. Tu trinchera sigue blindada.')

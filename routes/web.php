@@ -20,6 +20,9 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Ruta pública: Términos y Condiciones (no requiere autenticación)
+Route::get('/terminos', fn () => Inertia::render('Terms'))->name('terminos');
+
 use App\Models\Goal;
 
 Route::get('/dashboard', function () {

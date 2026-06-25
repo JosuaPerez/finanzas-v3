@@ -51,7 +51,7 @@ const submit = () => {
                     class="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner border border-slate-100">
                     <span class="text-4xl">🛡️</span>
                 </div>
-                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Finanzas de Combate</h1>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">FinanzasRPG</h1>
                 <p class="text-slate-500 font-medium mt-1 text-sm">Ingresa a tu Centro de Mando</p>
             </div>
 
@@ -128,7 +128,7 @@ const submit = () => {
         </div>
 
         <div class="z-10 mt-8 text-slate-400 text-xs font-medium">
-            &copy; {{ new Date().getFullYear() }} Finanzas de Combate. Todos los derechos reservados.
+            &copy; {{ new Date().getFullYear() }} FinanzasRPG. Todos los derechos reservados.
         </div>
     </div>
 </template>

@@ -17,6 +17,7 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    terms: false,
 });
 
 const showPassword = ref(false);
@@ -216,6 +217,24 @@ const submit = () => {
                         form.errors.password_confirmation }}</p>
                 </div>
 
+                <!-- Aceptación de Términos y Condiciones -->
+                <div>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input id="terms" type="checkbox" v-model="form.terms"
+                            class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                        <span class="text-sm text-slate-600">
+                            He leído y acepto los
+                            <a :href="route('terminos')" target="_blank"
+                                class="font-bold text-blue-600 hover:underline">
+                                Términos y Condiciones
+                            </a>
+                        </span>
+                    </label>
+                    <p v-if="form.errors.terms" class="mt-1 text-xs text-red-600 font-bold">
+                        {{ form.errors.terms }}
+                    </p>
+                </div>
+
                 <button type="submit" :disabled="!esPasswordSeguro || form.processing"
                     :class="{ 'opacity-50 cursor-not-allowed grayscale': !esPasswordSeguro }"
                     class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-all">
@@ -233,7 +252,7 @@ const submit = () => {
         </div>
 
         <div class="z-10 mt-8 text-slate-400 text-xs font-medium">
-            &copy; {{ new Date().getFullYear() }} Finanzas de Combate. Todos los derechos reservados.
+            &copy; {{ new Date().getFullYear() }} FinanzasRPG. Todos los derechos reservados.
         </div>
     </div>
 </template>

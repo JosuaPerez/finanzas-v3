@@ -43,6 +43,7 @@ class RegisteredUserController extends Controller
                     ->numbers()
                     ->symbols()
     ],
+            'terms' => ['required', 'accepted'],
 ]);
 
         $user = User::create([
