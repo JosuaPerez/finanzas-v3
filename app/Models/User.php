@@ -26,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'google_id',
         'current_streak',
         'longest_streak',
         'last_action_date',

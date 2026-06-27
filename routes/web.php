@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DebtController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\QuickAttackController;
@@ -11,6 +12,11 @@ use App\Models\Expense;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// ── Google OAuth Routes ────────────────────────────────────────────────────────
+Route::get('/auth/google',          [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+
 
 // Root: guests see the Landing Page, authenticated users go straight to the dashboard.
 Route::get('/', function () {
