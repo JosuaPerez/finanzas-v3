@@ -9,6 +9,7 @@ use App\Http\Controllers\QuickAttackController;
 use App\Models\Budget;
 use App\Models\Debt;
 use App\Models\Expense;
+use App\Models\Achievement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -57,6 +58,19 @@ Route::get('/dashboard', function () {
                 'time'        => $e->created_at->diffForHumans(),
             ]);
 
+        // All achievements with unlock status for this user.
+        $unlockedIds = \App\Models\Achievement::whereHas(
+            'users', fn ($q) => $q->where('user_id', $uid)
+        )->pluck('id')->flip();
+
+        $achievements = Achievement::all()->map(fn ($a) => [
+            'id'          => $a->id,
+            'name'        => $a->name,
+            'description' => $a->description,
+            'icon_name'   => $a->icon_name,
+            'unlocked_at' => $unlockedIds->has($a->id) ? true : null,
+        ]);
+
         return [
             'totalDebts'       => (float) $totalDebts,
             'activeDebtCount'  => (int)   $activeDebtCount,
@@ -65,6 +79,12 @@ Route::get('/dashboard', function () {
             'budgetCount'      => (int)   $budgetCount,
             'lastCapitalLibre' => (float) $lastCapitalLibre,
             'combatLog'        => $combatLog,
+            'achievements'     => $achievements,
+            'chartData'        => [
+                'debts'   => (float) $totalDebts,
+                'capital' => (float) $lastCapitalLibre,
+                'goals'   => (float) $totalGoalsSaved,
+            ],
         ];
     });
 

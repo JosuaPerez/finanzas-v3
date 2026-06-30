@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\CustomResetPassword;
+use App\Models\Achievement;
 use App\Models\CampaignBoss;
 use App\Models\Debt;
 use App\Models\Goal;
@@ -156,6 +157,11 @@ class User extends Authenticatable
     public function campaignBosses(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(CampaignBoss::class);
+    }
+
+    public function achievements(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Achievement::class)->withPivot('unlocked_at');
     }
 }
 

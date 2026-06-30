@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Traits\ChecksAchievements;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class QuickAttackController extends Controller
 {
+    use ChecksAchievements;
     /**
      * Record a quick expense (Quick Attack) and reward the user with XP.
      */
@@ -29,6 +31,9 @@ class QuickAttackController extends Controller
 
         // Award XP for logging an expense — keeps the Commander engaged.
         $request->user()->addXp(15);
+
+        // Achievement check — silently unlocks 'Suministros Asegurados' on 3rd expense.
+        $this->checkAchievements($request->user(), 'expenses_registered');
 
         return redirect()
             ->back()

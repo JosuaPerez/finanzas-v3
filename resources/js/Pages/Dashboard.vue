@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import BattleStats from '@/Components/BattleStats.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { formatCurrency } from '@/utils';
@@ -12,6 +13,8 @@ const props = defineProps({
     budgetCount:      { type: Number, default: 0 },
     lastCapitalLibre: { type: Number, default: 0 },
     combatLog:        { type: Array,  default: () => [] },
+    achievements:     { type: Array,  default: () => [] },
+    chartData:        { type: Object, default: () => ({ debts: 0, capital: 0, goals: 0 }) },
 });
 
 const page = usePage();
@@ -306,52 +309,9 @@ const onboardingMission = computed(() => {
                 </div>
 
                 <!-- ══════════════════════════════════════════════════════════
-                     REGISTRO DE BATALLA — Combat Log (recent expenses)
+                     ROW 2: BRIEFING DEL COMANDANTE — primary interaction zone
                 ═══════════════════════════════════════════════════════════ -->
-                <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
-                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
-                    <div class="absolute -top-12 -right-12 w-40 h-40 bg-violet-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
-
-                    <div class="flex items-center gap-3 mb-5 relative z-10">
-                        <div class="w-9 h-9 bg-violet-500/15 border border-violet-500/30 rounded-xl flex items-center justify-center text-lg">📜</div>
-                        <div>
-                            <p class="text-[10px] font-black tracking-[0.2em] uppercase text-violet-400">Últimas Acciones</p>
-                            <h3 class="text-sm font-black text-white leading-tight">Registro de Batalla</h3>
-                        </div>
-                    </div>
-
-                    <!-- Log entries -->
-                    <div v-if="combatLog.length > 0" class="space-y-2 relative z-10">
-                        <div
-                            v-for="(entry, i) in combatLog"
-                            :key="i"
-                            class="flex items-center justify-between gap-4 px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl"
-                        >
-                            <div class="flex items-center gap-3 min-w-0">
-                                <span class="text-lg flex-shrink-0">⚡</span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-bold text-white truncate">{{ entry.description }}</p>
-                                    <p class="text-[11px] text-slate-500">
-                                        <span class="text-violet-400 font-bold">{{ entry.type }}</span>
-                                        <span class="mx-1.5 text-slate-700">·</span>
-                                        {{ entry.time }}
-                                    </p>
-                                </div>
-                            </div>
-                            <span class="text-red-400 font-black font-mono text-sm flex-shrink-0">-RD$ {{ formatCurrency(entry.amount) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Empty state -->
-                    <div v-else class="text-center py-8 relative z-10">
-                        <p class="text-slate-600 text-sm font-medium">El radar está despejado. No hay actividad reciente.</p>
-                    </div>
-                </div>
-
-                <!-- ══════════════════════════════════════════════════════════
-                     BRIEFING DEL COMANDANTE — quick-action cards
-                ═══════════════════════════════════════════════════════════ -->
-                <div class="hidden lg:block bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
+                <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden">
                     <!-- Ambient orbs -->
                     <div class="absolute inset-0 pointer-events-none overflow-hidden">
                         <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
@@ -359,17 +319,17 @@ const onboardingMission = computed(() => {
                     </div>
 
                     <div class="relative z-10">
-                        <div class="text-center mb-10">
+                        <div class="text-center mb-8">
                             <h2 class="text-xs sm:text-sm font-bold text-blue-400 tracking-widest uppercase mb-2">
                                 Briefing del Comandante
                             </h2>
-                            <h1 class="text-3xl md:text-4xl font-black mb-4">¿Cuál es tu próximo movimiento?</h1>
-                            <p class="text-slate-400 max-w-2xl mx-auto font-medium">
+                            <h1 class="text-2xl sm:text-3xl md:text-4xl font-black mb-3">¿Cuál es tu próximo movimiento?</h1>
+                            <p class="text-slate-400 max-w-2xl mx-auto font-medium text-sm sm:text-base">
                                 Mantén tu economía blindada. Organiza tus suministros, mejora tu equipamiento y no dejes que el enemigo tome la iniciativa.
                             </p>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 
                             <!-- Presupuesto -->
                             <Link :href="route('presupuesto')"
@@ -378,7 +338,7 @@ const onboardingMission = computed(() => {
                                     <span class="text-xl sm:text-2xl">🛡️</span>
                                 </div>
                                 <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Planificar Defensa</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Distribuye tus suministros y capital libre.</p>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed hidden sm:block">Distribuye tus suministros y capital libre.</p>
                             </Link>
 
                             <!-- Deudas -->
@@ -388,7 +348,7 @@ const onboardingMission = computed(() => {
                                     <span class="text-xl sm:text-2xl">🔥</span>
                                 </div>
                                 <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Atacar Jefes</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Haz daño crítico a las deudas.</p>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed hidden sm:block">Haz daño crítico a las deudas.</p>
                             </Link>
 
                             <!-- Metas -->
@@ -398,7 +358,7 @@ const onboardingMission = computed(() => {
                                     <span class="text-xl sm:text-2xl">🎯</span>
                                 </div>
                                 <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Mejorar Arsenal</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Forja equipamiento fijando objetivos.</p>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed hidden sm:block">Forja equipamiento fijando objetivos.</p>
                             </Link>
 
                             <!-- Historial -->
@@ -408,11 +368,148 @@ const onboardingMission = computed(() => {
                                     <span class="text-xl sm:text-2xl">🗂️</span>
                                 </div>
                                 <h3 class="text-sm sm:text-lg font-bold text-white mb-1 sm:mb-2">Archivos de Guerra</h3>
-                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">Analiza el registro de tus victorias.</p>
+                                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed hidden sm:block">Analiza el registro de tus victorias.</p>
                             </Link>
                         </div>
                     </div>
                 </div>
+
+                <!-- ══════════════════════════════════════════════════════════
+                     ROW 3: TACTICAL GRID — asymmetric 12-col layout
+                     LEFT  (col-8): Mapa de Batalla + Sala de Trofeos
+                     RIGHT (col-4): Registro de Batalla (height-capped)
+                ═══════════════════════════════════════════════════════════ -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                    <!-- ── LEFT COLUMN (col-span-8) ── -->
+                    <div class="lg:col-span-8 flex flex-col gap-6">
+
+                        <!-- INTELIGENCIA VISUAL — BattleStats Donut Chart -->
+                        <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+                            <div class="absolute -top-12 -left-12 w-40 h-40 bg-blue-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
+
+                            <div class="flex items-center gap-3 mb-5 relative z-10">
+                                <div class="w-9 h-9 bg-blue-500/15 border border-blue-500/30 rounded-xl flex items-center justify-center text-lg">📊</div>
+                                <div>
+                                    <p class="text-[10px] font-black tracking-[0.2em] uppercase text-blue-400">Inteligencia Visual</p>
+                                    <h3 class="text-sm font-black text-white leading-tight">Mapa de Batalla</h3>
+                                </div>
+                            </div>
+
+                            <BattleStats
+                                :debts="chartData.debts"
+                                :capital="chartData.capital"
+                                :goals="chartData.goals"
+                            />
+                        </div>
+
+                        <!-- SALA DE TROFEOS — Achievement grid -->
+                        <div v-if="achievements.length > 0" class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent"></div>
+                            <div class="absolute -top-10 -right-10 w-36 h-36 bg-amber-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
+
+                            <div class="flex items-center gap-3 mb-5 relative z-10">
+                                <div class="w-9 h-9 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-lg">🏆</div>
+                                <div>
+                                    <p class="text-[10px] font-black tracking-[0.2em] uppercase text-amber-400">Logros Desbloqueados</p>
+                                    <h3 class="text-sm font-black text-white leading-tight">Sala de Trofeos</h3>
+                                </div>
+                                <span class="ml-auto px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 rounded-full text-amber-400 text-xs font-black">
+                                    {{ achievements.filter(a => a.unlocked_at).length }} / {{ achievements.length }}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+                                <div
+                                    v-for="achievement in achievements"
+                                    :key="achievement.id"
+                                    :class="[
+                                        'relative rounded-2xl border p-4 transition-all duration-300',
+                                        achievement.unlocked_at
+                                            ? 'bg-amber-950/30 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:-translate-y-0.5'
+                                            : 'bg-slate-950/40 border-slate-800/60 opacity-30 grayscale'
+                                    ]"
+                                >
+                                    <div
+                                        v-if="achievement.unlocked_at"
+                                        class="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"
+                                    ></div>
+
+                                    <div class="flex items-start gap-3">
+                                        <div
+                                            :class="[
+                                                'w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0',
+                                                achievement.unlocked_at
+                                                    ? 'bg-amber-500/20 border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                                                    : 'bg-slate-800 border border-slate-700'
+                                            ]"
+                                        >
+                                            {{ achievement.icon_name }}
+                                        </div>
+
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-1.5 mb-0.5">
+                                                <p class="text-xs font-black text-white truncate">{{ achievement.name }}</p>
+                                                <span
+                                                    v-if="achievement.unlocked_at"
+                                                    class="flex-shrink-0 px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400 text-[9px] font-black uppercase tracking-wider"
+                                                >✓ OBTENIDO</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-500 leading-snug">{{ achievement.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /LEFT COLUMN -->
+
+                    <!-- ── RIGHT COLUMN (col-span-4): Combat Log ── -->
+                    <div class="lg:col-span-4">
+                        <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 shadow-xl overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
+                            <div class="absolute -top-12 -right-12 w-40 h-40 bg-violet-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
+
+                            <div class="flex items-center gap-3 mb-5 relative z-10">
+                                <div class="w-9 h-9 bg-violet-500/15 border border-violet-500/30 rounded-xl flex items-center justify-center text-lg">📜</div>
+                                <div>
+                                    <p class="text-[10px] font-black tracking-[0.2em] uppercase text-violet-400">Últimas Acciones</p>
+                                    <h3 class="text-sm font-black text-white leading-tight">Registro de Batalla</h3>
+                                </div>
+                            </div>
+
+                            <!-- Scrollable log — max 600px so it never stretches the page -->
+                            <div class="max-h-[600px] overflow-y-auto custom-scrollbar pr-1 relative z-10">
+                                <div v-if="combatLog.length > 0" class="space-y-2">
+                                    <div
+                                        v-for="(entry, i) in combatLog"
+                                        :key="i"
+                                        class="flex items-center justify-between gap-3 px-3 py-3 bg-slate-950/60 border border-slate-800 rounded-xl"
+                                    >
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="text-base flex-shrink-0">⚡</span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-bold text-white truncate">{{ entry.description }}</p>
+                                                <p class="text-[10px] text-slate-500">
+                                                    <span class="text-violet-400 font-bold">{{ entry.type }}</span>
+                                                    <span class="mx-1 text-slate-700">·</span>
+                                                    {{ entry.time }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span class="text-red-400 font-black font-mono text-xs flex-shrink-0">-{{ formatCurrency(entry.amount) }}</span>
+                                    </div>
+                                </div>
+
+                                <div v-else class="text-center py-8">
+                                    <p class="text-slate-600 text-sm font-medium">El radar está despejado.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /RIGHT COLUMN -->
+
+                </div><!-- /TACTICAL GRID -->
 
             </div>
         </div>
@@ -426,5 +523,24 @@ const onboardingMission = computed(() => {
 }
 .animate-shimmer {
     animation: shimmer 2.5s ease-in-out infinite;
+}
+
+/* Tactical dark scrollbar — combat log */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent; /* slate-700 thumb, transparent track */
+}
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+    border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #475569; /* slate-600 on hover */
 }
 </style>
