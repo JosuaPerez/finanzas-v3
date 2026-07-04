@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Debt;
 use App\Services\BpdExchangeRateService;
+use App\Services\CombatService;
 use App\Services\DebtService;
 use App\Traits\ChecksAchievements;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class DebtController extends Controller
     public function __construct(
         private readonly DebtService            $debtService,
         private readonly BpdExchangeRateService $rateService,
+        private readonly CombatService          $combatService,
     ) {}
 
     public function store(Request $request): RedirectResponse
@@ -97,8 +99,14 @@ class DebtController extends Controller
 
         $this->debtService->applyPayment($debt, (float) $validated['amount']);
 
-        // ── Achievement checks ───────────────────────────────────────────────
         $user = $request->user();
+
+        // ── RPG Combat: real debt payment = real boss damage ─────────────────
+        // Damage is denominated in DOP so both currencies hit the boss equally.
+        // CombatService handles defeat detection and XP award internally.
+        $this->combatService->processAttack($user, $dopCost);
+
+        // ── Achievement checks ───────────────────────────────────────────────
         $this->checkAchievements($user, 'debt_payment_made');
         $debt->refresh();
         if ($debt->balance <= 0) {

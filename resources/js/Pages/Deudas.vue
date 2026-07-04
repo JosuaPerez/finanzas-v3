@@ -9,8 +9,9 @@ import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composab
 
 const props = defineProps({
     debts:             Array,
-    ammunition:        { type: Number, default: 0 },  // Capital Libre del último presupuesto (DOP)
-    usd_exchange_rate: { type: Number, default: 59.50 }, // Tasa de cambio USD→DOP
+    ammunition:        { type: Number, default: 0 },
+    usd_exchange_rate: { type: Number, default: 59.50 },
+    fallen_bosses:     { type: Array,  default: () => [] },
 });
 
 const form = ref({
@@ -678,6 +679,47 @@ const submitPayment = () => {
 
                         </div>
                     </div>
+
+                    <!-- ══════════════════════════════════════════════════
+                         JEFES CAÍDOS — Fallen Boss Gallery
+                    ══════════════════════════════════════════════════ -->
+                    <div v-if="fallen_bosses && fallen_bosses.length > 0" class="mt-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-xl">☠️</span>
+                            <div>
+                                <p class="text-[10px] font-black tracking-[0.2em] uppercase text-slate-600">Hall of Defeat</p>
+                                <h3 class="text-sm font-black text-slate-500 leading-tight">Jefes Caídos</h3>
+                            </div>
+                            <span class="ml-auto px-2.5 py-1 bg-slate-800/60 border border-slate-700/50 rounded-full text-slate-600 text-xs font-black">
+                                {{ fallen_bosses.length }} eliminado{{ fallen_bosses.length > 1 ? 's' : '' }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div
+                                v-for="boss in fallen_bosses"
+                                :key="boss.id"
+                                class="relative bg-slate-900/40 border border-slate-800/60 rounded-2xl p-4 grayscale opacity-50 hover:opacity-70 transition-opacity duration-300 overflow-hidden"
+                            >
+                                <!-- Skull watermark -->
+                                <div class="absolute -right-2 -top-2 text-4xl opacity-10 select-none pointer-events-none">💀</div>
+
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⚰️</div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-black text-slate-400 truncate">{{ boss.name }}</p>
+                                        <p class="text-[10px] text-slate-600 mt-0.5">
+                                            Derrotado el {{ new Date(boss.updated_at).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' }) }}
+                                        </p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-right">
+                                        <p class="text-xs font-black text-yellow-600/70">+{{ boss.experience_reward ?? 0 }} XP</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

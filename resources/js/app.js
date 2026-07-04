@@ -27,6 +27,15 @@ createInertiaApp({
         // El color de la barra (Azul brillante)
         color: '#2563eb',
         // Mostrar la barra instantáneamente (0 milisegundos de retraso)
-        delay: 0, 
+        delay: 0,
     },
 });
+
+// ── PWA Service Worker registration ───────────────────────────────────────────
+// Only active in production builds (devOptions.enabled: false in vite.config.js).
+// registerType: 'autoUpdate' — no user prompt, the SW refreshes silently.
+if (import.meta.env.PROD) {
+    import('virtual:pwa-register').then(({ registerSW }) => {
+        registerSW({ immediate: true });
+    });
+}

@@ -1,9 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BattleStats from '@/Components/BattleStats.vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, usePage, router } from '@inertiajs/vue3';
+import { computed, ref, onMounted } from 'vue';
 import { formatCurrency } from '@/utils';
+import { useCountUp } from '@/composables/useCountUp';
+
+// Skeleton: true for exactly one animation frame so first paint shows skeletons
+const isLoading = ref(true);
+onMounted(() => { isLoading.value = false; });
 
 const props = defineProps({
     totalDebts:       { type: Number, default: 0 },
@@ -14,6 +19,7 @@ const props = defineProps({
     lastCapitalLibre: { type: Number, default: 0 },
     combatLog:        { type: Array,  default: () => [] },
     achievements:     { type: Array,  default: () => [] },
+    quests:           { type: Object, default: () => null },
     chartData:        { type: Object, default: () => ({ debts: 0, capital: 0, goals: 0 }) },
 });
 
@@ -56,6 +62,12 @@ const forgePercent = computed(() => {
     return Math.min(100, Math.round((props.totalGoalsSaved / props.totalGoalsTarget) * 100));
 });
 
+// ── Count-up animations for the three main stat cards ─────────────────────
+const { displayed: animatedDebts }   = useCountUp(() => props.totalDebts);
+const { displayed: animatedGoals }   = useCountUp(() => props.totalGoalsSaved);
+const { displayed: animatedCapital } = useCountUp(() => props.lastCapitalLibre);
+const { displayed: animatedXpCur }   = useCountUp(() => page.props.auth.user.xp_progress.current, { duration: 700 });
+
 // ── Onboarding Mission ─────────────────────────────────────────────────
 const onboardingMission = computed(() => {
     const capital = props.lastCapitalLibre;
@@ -93,6 +105,18 @@ const onboardingMission = computed(() => {
     // Rule 3: everything is set → no banner
     return null;
 });
+// ── Daily Quests Claim ─────────────────────────────────────────────────
+const claimingQuests = ref(false);
+
+const claimQuests = () => {
+    if (!props.quests?.can_claim || claimingQuests.value) return;
+    claimingQuests.value = true;
+    router.post(route('quests.claim'), {}, {
+        preserveScroll: true,
+        onFinish: () => { claimingQuests.value = false; }
+    });
+};
+
 </script>
 
 <template>
@@ -186,6 +210,22 @@ const onboardingMission = computed(() => {
                     <!-- ── Top stats row ── -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 
+                        <!-- SKELETON: shown while isLoading -->
+                        <template v-if="isLoading">
+                            <div v-for="i in 3" :key="i" class="relative bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl overflow-hidden animate-pulse">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="w-11 h-11 bg-slate-800 rounded-xl"></div>
+                                    <div class="w-16 h-6 bg-slate-800 rounded-full"></div>
+                                </div>
+                                <div class="h-3 bg-slate-800 rounded-full w-24 mb-3"></div>
+                                <div class="h-8 bg-slate-800 rounded-full w-40"></div>
+                                <div class="h-2 bg-slate-800 rounded-full w-32 mt-3"></div>
+                            </div>
+                        </template>
+
+                        <!-- REAL CONTENT -->
+                        <template v-else>
+
                         <!-- HP Enemigo -->
                         <div class="relative bg-slate-900/80 backdrop-blur-sm border border-red-900/40 ring-1 ring-red-500/10 rounded-3xl p-6 shadow-xl overflow-hidden group hover:-translate-y-0.5 transition-transform">
                             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
@@ -204,7 +244,7 @@ const onboardingMission = computed(() => {
                             </div>
                             <p class="text-xs font-bold text-red-400/70 uppercase tracking-widest mb-1">HP Enemigo</p>
                             <p class="text-2xl sm:text-3xl font-black text-white font-mono leading-tight">
-                                {{ formatCurrency(totalDebts) }}
+                                {{ formatCurrency(animatedDebts) }}
                             </p>
                             <p class="text-xs text-slate-600 mt-2">Saldo total de deudas activas</p>
                         </div>
@@ -224,7 +264,7 @@ const onboardingMission = computed(() => {
                             </div>
                             <p class="text-xs font-bold text-emerald-400/70 uppercase tracking-widest mb-1">Recursos en la Forja</p>
                             <p class="text-2xl sm:text-3xl font-black text-white font-mono leading-tight">
-                                {{ formatCurrency(totalGoalsSaved) }}
+                                {{ formatCurrency(animatedGoals) }}
                             </p>
                             <!-- Mini progress bar -->
                             <div v-if="totalGoalsTarget > 0" class="mt-3">
@@ -252,13 +292,16 @@ const onboardingMission = computed(() => {
                             <p class="text-xs font-bold text-blue-400/70 uppercase tracking-widest mb-1">Capital Libre</p>
                             <p class="text-2xl sm:text-3xl font-black font-mono leading-tight"
                                 :class="lastCapitalLibre > 0 ? 'text-white' : (lastCapitalLibre < 0 ? 'text-red-400' : 'text-slate-600')">
-                                {{ budgetCount > 0 ? formatCurrency(lastCapitalLibre) : '—' }}
+                                {{ budgetCount > 0 ? formatCurrency(animatedCapital) : '—' }}
                             </p>
                             <p class="text-xs text-slate-600 mt-2">
                                 {{ budgetCount > 0 ? `${budgetCount} plan${budgetCount > 1 ? 'es' : ''} guardado${budgetCount > 1 ? 's' : ''}` : 'Aún no hay planes guardados' }}
                             </p>
                         </div>
-                    </div>
+
+                        </template><!-- /v-else real content -->
+
+                    </div><!-- /stats grid -->
 
                     <!-- ── Campaign Progress / EXP bar ── -->
                     <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
@@ -285,7 +328,7 @@ const onboardingMission = computed(() => {
                             <div class="flex-1 min-w-0">
                                 <div class="flex justify-between items-baseline mb-2">
                                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Progreso de Campaña</p>
-                                    <span class="text-sm font-black text-white">{{ $page.props.auth.user.xp_progress.current }}<span class="text-slate-600 font-normal text-xs"> / {{ $page.props.auth.user.xp_progress.needed }} XP (Nvl. {{ $page.props.auth.user.level }})</span></span>
+                                    <span class="text-sm font-black text-white">{{ Math.round(animatedXpCur) }}<span class="text-slate-600 font-normal text-xs"> / {{ $page.props.auth.user.xp_progress.needed }} XP (Nvl. {{ $page.props.auth.user.level }})</span></span>
                                 </div>
                                 <div class="relative w-full h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700 shadow-inner">
                                     <div
@@ -397,7 +440,18 @@ const onboardingMission = computed(() => {
                                 </div>
                             </div>
 
+                            <!-- Chart skeleton -->
+                            <div v-if="isLoading" class="animate-pulse flex flex-col items-center gap-4 py-4">
+                                <div class="w-40 h-40 bg-slate-800 rounded-full"></div>
+                                <div class="flex gap-4">
+                                    <div class="h-3 bg-slate-800 rounded-full w-20"></div>
+                                    <div class="h-3 bg-slate-800 rounded-full w-20"></div>
+                                    <div class="h-3 bg-slate-800 rounded-full w-20"></div>
+                                </div>
+                            </div>
+
                             <BattleStats
+                                v-else
                                 :debts="chartData.debts"
                                 :capital="chartData.capital"
                                 :goals="chartData.goals"
@@ -465,8 +519,61 @@ const onboardingMission = computed(() => {
 
                     </div><!-- /LEFT COLUMN -->
 
-                    <!-- ── RIGHT COLUMN (col-span-4): Combat Log ── -->
-                    <div class="lg:col-span-4">
+                    <!-- ── RIGHT COLUMN (col-span-4): Combat Log & Quests ── -->
+                    <div class="lg:col-span-4 flex flex-col gap-6">
+
+                        <!-- MISIONES DIARIAS -->
+                        <div v-if="quests" class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 shadow-xl overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
+                            <div class="absolute -top-12 -right-12 w-40 h-40 bg-cyan-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>
+
+                            <div class="flex items-center gap-3 mb-4 relative z-10">
+                                <div class="w-9 h-9 bg-cyan-500/15 border border-cyan-500/30 rounded-xl flex items-center justify-center text-lg">🎯</div>
+                                <div>
+                                    <p class="text-[10px] font-black tracking-[0.2em] uppercase text-cyan-400">Objetivos Tácticos</p>
+                                    <h3 class="text-sm font-black text-white leading-tight">Misiones Diarias</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 mb-4 relative z-10">
+                                <div v-for="quest in quests.list" :key="quest.id"
+                                    class="flex items-center gap-3 p-3 rounded-xl border transition-colors"
+                                    :class="quest.completed ? 'bg-cyan-950/30 border-cyan-500/40' : 'bg-slate-950/40 border-slate-800/60 opacity-50 grayscale'"
+                                >
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg"
+                                         :class="quest.completed ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-800 text-slate-500'">
+                                        <svg v-if="quest.completed" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        <span v-else class="text-xs font-black">?</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-bold text-white truncate">{{ quest.name }}</p>
+                                        <p class="text-[10px] text-slate-400">{{ quest.description }}</p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-[10px] font-black text-cyan-400 border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                                        +{{ quest.xp }} XP
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button
+                                v-if="!quests.already_claimed"
+                                @click="claimQuests"
+                                :disabled="!quests.can_claim || claimingQuests"
+                                class="relative z-10 w-full py-2.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all"
+                                :class="quests.can_claim 
+                                    ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(8,145,178,0.5)] cursor-pointer' 
+                                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'"
+                            >
+                                <span v-if="claimingQuests">Reclamando...</span>
+                                <span v-else-if="quests.can_claim">Reclamar Recompensas</span>
+                                <span v-else>Completa misiones</span>
+                            </button>
+                            <div v-else class="relative z-10 w-full py-2.5 rounded-xl font-black text-sm uppercase tracking-wider text-center bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                Recompensas Obtenidas
+                            </div>
+                        </div>
+
+                        <!-- REGISTRO DE BATALLA -->
                         <div class="relative bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-3xl p-6 shadow-xl overflow-hidden">
                             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
                             <div class="absolute -top-12 -right-12 w-40 h-40 bg-violet-600 rounded-full mix-blend-screen filter blur-[80px] opacity-10 pointer-events-none"></div>

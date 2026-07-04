@@ -33,6 +33,7 @@ class User extends Authenticatable
         'last_action_date',
         'current_xp',
         'level',
+        'daily_reward_claimed_at',
     ];
 
     /**
@@ -61,9 +62,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'  => 'datetime',
-            'password'           => 'hashed',
-            'last_action_date'   => 'date',
+            'email_verified_at'       => 'datetime',
+            'password'                => 'hashed',
+            'last_action_date'        => 'date',
+            'daily_reward_claimed_at' => 'date',
         ];
     }
 
@@ -90,12 +92,19 @@ class User extends Authenticatable
      */
     public function addXp(int $amount): void
     {
+        $rankBefore = $this->rank_name; // capture before update
+
         $this->current_xp += $amount;
         $newLevel = (int) floor(sqrt($this->current_xp / 100)) + 1;
         if ($newLevel > $this->level) {
             $this->level = $newLevel;
         }
         $this->save();
+
+        // Flash a level-up notification if the rank name changed.
+        if ($this->rank_name !== $rankBefore) {
+            session()->flash('level_up', ['new_rank' => $this->rank_name]);
+        }
     }
 
     /**

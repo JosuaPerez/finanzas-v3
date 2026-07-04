@@ -36,6 +36,12 @@ class HandleInertiaRequests extends Middleware
                 // Streak data — available as usePage().props.auth.current_streak
                 'current_streak' => $request->user()?->current_streak ?? 0,
             ],
+            // Flash data — toast system reads level_up and streak_bonus from here.
+            'flash' => [
+                'level_up'      => $request->session()->get('level_up'),
+                'streak_bonus'  => $request->session()->get('streak_bonus'),
+                'quest_claimed' => $request->session()->get('quest_claimed'),
+            ],
         ];
     }
 }

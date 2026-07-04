@@ -15,6 +15,16 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            keyframes: {
+                shrink: {
+                    '0%':   { width: '100%' },
+                    '100%': { width: '0%' },
+                },
+            },
+            animation: {
+                // matches the 4-second toast auto-dismiss window
+                'shrink': 'shrink 4s linear forwards',
+            },
         },
     },
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
 import QuickAttackModal from '@/Components/QuickAttackModal.vue';
@@ -42,6 +42,36 @@ const page = usePage();
 // Streak — read from the globally shared auth prop
 const currentStreak = computed(() => page.props.auth?.current_streak ?? 0);
 
+// ── Toast system (level-up + streak bonus) ──────────────────────────────
+const toast = ref(null); // { type: 'level_up'|'streak', ...payload }
+let toastTimer = null;
+
+const showToast = (payload) => {
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.value = payload;
+    toastTimer = setTimeout(() => { toast.value = null; }, 4000);
+};
+
+const dismissToast = () => {
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.value = null;
+};
+
+// React to every Inertia page visit so flash props are read after navigation.
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (flash?.level_up) {
+            showToast({ type: 'level_up', ...flash.level_up });
+        } else if (flash?.streak_bonus) {
+            showToast({ type: 'streak', ...flash.streak_bonus });
+        } else if (flash?.quest_claimed) {
+            showToast({ type: 'quest', ...flash.quest_claimed });
+        }
+    },
+    { deep: true }
+);
+
 const toggleBodyScroll = () => {
     document.body.style.overflow = isSidebarOpen.value ? 'hidden' : '';
 };
@@ -60,6 +90,21 @@ const handleOutsideClick = (e) => {
 };
 const handleEscape = (e) => {
     if (e.key === 'Escape') isUserMenuOpen.value = false;
+
+    // ── Global Shortcuts (K / D / P) ─────────────────────────────────────
+    // Ignore when focus is inside a text field to avoid hijacking user input.
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+
+    if (e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('open-quick-attack'));
+    } else if (e.key === 'd' || e.key === 'D') {
+        router.visit(route('deudas'));
+    } else if (e.key === 'p' || e.key === 'P') {
+        router.visit(route('presupuesto'));
+    }
 };
 
 onMounted(() => {
@@ -376,8 +421,110 @@ onUnmounted(() => {
                     <span v-else class="w-1 h-1 mt-0.5"></span>
                 </Link>
             </nav>
-            <!-- ═══ QUICK ATTACK MODAL — global Ctrl+K shortcut ═══ -->
+            <!-- ═══ QUICK ATTACK MODAL ═══ -->
             <QuickAttackModal />
+
+            <!-- ═══ TOAST NOTIFICATIONS ═══ -->
+            <Transition
+                enter-active-class="transition-all duration-500 ease-out"
+                enter-from-class="opacity-0 translate-y-4 scale-95"
+                enter-to-class="opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition-all duration-300 ease-in"
+                leave-from-class="opacity-100 translate-y-0 scale-100"
+                leave-to-class="opacity-0 translate-y-4 scale-95"
+            >
+                <div
+                    v-if="toast"
+                    role="alert"
+                    class="fixed bottom-28 lg:bottom-6 right-4 lg:right-6 z-[200] max-w-sm w-full"
+                >
+                    <!-- Level-Up Toast -->
+                    <div
+                        v-if="toast.type === 'level_up'"
+                        class="relative overflow-hidden rounded-2xl border border-blue-500/50 bg-slate-950/95 backdrop-blur-md px-5 py-4 shadow-[0_0_40px_rgba(59,130,246,0.35)] ring-1 ring-blue-500/20"
+                    >
+                        <!-- Neon top edge -->
+                        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+                        <!-- Ambient glow -->
+                        <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-16 bg-blue-500 rounded-full mix-blend-screen filter blur-[40px] opacity-25 pointer-events-none"></div>
+
+                        <div class="flex items-start gap-4 relative z-10">
+                            <!-- Icon -->
+                            <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-2xl animate-bounce">
+                                ⭐
+                            </div>
+                            <!-- Text -->
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-0.5">¡NIVEL SUPERIOR!
+                                    <span class="animate-ping inline-flex w-1.5 h-1.5 rounded-full bg-blue-400 opacity-75 ml-1 align-middle"></span>
+                                </p>
+                                <p class="text-base font-black text-white leading-tight">Has ascendido a <span class="text-blue-300">{{ toast.new_rank }}</span></p>
+                                <p class="text-xs text-slate-500 mt-0.5">Nuevo rango desbloqueado. El campo de batalla tiembla.</p>
+                            </div>
+                            <!-- Dismiss -->
+                            <button @click="dismissToast" class="flex-shrink-0 text-slate-600 hover:text-slate-400 transition-colors mt-0.5">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <!-- Progress drain bar -->
+                        <div class="mt-3 w-full h-0.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full animate-[shrink_4s_linear_forwards]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Streak Bonus Toast -->
+                    <div
+                        v-else-if="toast.type === 'streak'"
+                        class="relative overflow-hidden rounded-2xl border border-orange-500/50 bg-slate-950/95 backdrop-blur-md px-5 py-4 shadow-[0_0_40px_rgba(249,115,22,0.30)] ring-1 ring-orange-500/20"
+                    >
+                        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400 to-transparent"></div>
+                        <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-16 bg-orange-500 rounded-full mix-blend-screen filter blur-[40px] opacity-20 pointer-events-none"></div>
+
+                        <div class="flex items-start gap-4 relative z-10">
+                            <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-2xl">
+                                🔥
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 mb-0.5">¡RACHA LEGENDARIA!</p>
+                                <p class="text-base font-black text-white leading-tight">{{ toast.days }} días consecutivos</p>
+                                <p class="text-xs text-slate-500 mt-0.5">+{{ toast.bonus }} XP de recompensa. Sigue el ritmo, Comandante.</p>
+                            </div>
+                            <button @click="dismissToast" class="flex-shrink-0 text-slate-600 hover:text-slate-400 transition-colors mt-0.5">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="mt-3 w-full h-0.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-orange-600 to-amber-400 rounded-full animate-[shrink_4s_linear_forwards]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Quest Claimed Toast -->
+                    <div
+                        v-else-if="toast.type === 'quest'"
+                        class="relative overflow-hidden rounded-2xl border border-emerald-500/50 bg-slate-950/95 backdrop-blur-md px-5 py-4 shadow-[0_0_40px_rgba(16,185,129,0.30)] ring-1 ring-emerald-500/20"
+                    >
+                        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent"></div>
+                        <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-16 bg-emerald-500 rounded-full mix-blend-screen filter blur-[40px] opacity-20 pointer-events-none"></div>
+
+                        <div class="flex items-start gap-4 relative z-10">
+                            <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-2xl">
+                                🎖️
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-0.5">¡OBJETIVOS CUMPLIDOS!</p>
+                                <p class="text-base font-black text-white leading-tight">Recompensa diaria obtenida</p>
+                                <p class="text-xs text-slate-500 mt-0.5">+{{ toast.xp }} XP por completar {{ toast.count }} mision{{ toast.count > 1 ? 'es' : '' }}.</p>
+                            </div>
+                            <button @click="dismissToast" class="flex-shrink-0 text-slate-600 hover:text-slate-400 transition-colors mt-0.5">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="mt-3 w-full h-0.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-emerald-600 to-teal-400 rounded-full animate-[shrink_4s_linear_forwards]"></div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
         </div>
     </div>
 </template>

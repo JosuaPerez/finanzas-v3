@@ -6,6 +6,8 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\QuickAttackController;
+use App\Http\Controllers\QuestController;
+use App\Services\DailyQuestEngine;
 use App\Models\Budget;
 use App\Models\Debt;
 use App\Models\Expense;
@@ -58,18 +60,18 @@ Route::get('/dashboard', function () {
                 'time'        => $e->created_at->diffForHumans(),
             ]);
 
-        // All achievements with unlock status for this user.
-        $unlockedIds = \App\Models\Achievement::whereHas(
-            'users', fn ($q) => $q->where('user_id', $uid)
-        )->pluck('id')->flip();
-
-        $achievements = Achievement::all()->map(fn ($a) => [
-            'id'          => $a->id,
-            'name'        => $a->name,
-            'description' => $a->description,
-            'icon_name'   => $a->icon_name,
-            'unlocked_at' => $unlockedIds->has($a->id) ? true : null,
-        ]);
+        // All achievements with unlock status for this user — single query via eager load.
+        // Previously: Achievement::whereHas(...) + Achievement::all() = 2 round-trips.
+        // Now: one JOIN-backed eager load covers both the list and the pivot check.
+        $achievements = Achievement::with(['users' => fn ($q) => $q->where('user_id', $uid)])
+            ->get()
+            ->map(fn ($a) => [
+                'id'          => $a->id,
+                'name'        => $a->name,
+                'description' => $a->description,
+                'icon_name'   => $a->icon_name,
+                'unlocked_at' => $a->users->isNotEmpty() ? true : null,
+            ]);
 
         return [
             'totalDebts'       => (float) $totalDebts,
@@ -80,6 +82,7 @@ Route::get('/dashboard', function () {
             'lastCapitalLibre' => (float) $lastCapitalLibre,
             'combatLog'        => $combatLog,
             'achievements'     => $achievements,
+            'quests'           => app(DailyQuestEngine::class)->getStatus(auth()->user()),
             'chartData'        => [
                 'debts'   => (float) $totalDebts,
                 'capital' => (float) $lastCapitalLibre,
@@ -103,24 +106,30 @@ Route::get('/presupuesto', function () {
 })->middleware(['auth', 'verified'])->name('presupuesto');
 
 Route::get('/deudas', function () {
-    // 1. Buscamos las deudas
-    $misDeudas = Debt::where('user_id', auth()->id())->where('balance', '>', 0)->get();
+    $uid = auth()->id();
 
-    // 2. Buscamos el último presupuesto guardado para extraer las municiones
-    $ultimoPresupuesto = Budget::where('user_id', auth()->id())->latest()->first();
+    // 1. Deudas activas
+    $misDeudas = Debt::where('user_id', $uid)->where('balance', '>', 0)->get();
+
+    // 2. Último presupuesto → municiones
+    $ultimoPresupuesto = Budget::where('user_id', $uid)->latest()->first();
     $capitalLibre = 0;
-
     if ($ultimoPresupuesto) {
-        // Como guardamos los detalles en JSON, lo decodificamos
-        $details = is_string($ultimoPresupuesto->details) ? json_decode($ultimoPresupuesto->details, true) : $ultimoPresupuesto->details;
+        $details      = is_string($ultimoPresupuesto->details) ? json_decode($ultimoPresupuesto->details, true) : $ultimoPresupuesto->details;
         $capitalLibre = $details['remaining'] ?? 0;
     }
 
-    // 3. Enviamos todo a Vue
+    // 3. Jefes Caídos (campaign_bosses derrotados)
+    $fallenBosses = \App\Models\CampaignBoss::where('user_id', $uid)
+        ->where('is_defeated', true)
+        ->orderByDesc('updated_at')
+        ->get(['id', 'name', 'experience_reward', 'updated_at']);
+
     return Inertia::render('Deudas', [
         'debts'             => $misDeudas,
-        'ammunition'        => $capitalLibre,       // Capital Libre del último presupuesto
+        'ammunition'        => $capitalLibre,
         'usd_exchange_rate' => app(\App\Services\BpdExchangeRateService::class)->getUsdSellRate(),
+        'fallen_bosses'     => $fallenBosses,
     ]);
 })->middleware(['auth', 'verified'])->name('deudas');
 
@@ -151,6 +160,7 @@ Route::get('/presupuestos/exportar/{id?}', [App\Http\Controllers\BudgetControlle
 
 Route::middleware(['auth', 'throttle:30,1'])->group(function () {
     Route::post('/quick-attack', [QuickAttackController::class, 'store'])->name('quick-attack.store');
+    Route::post('/quests/claim', [QuestController::class, 'claim'])->name('quests.claim');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

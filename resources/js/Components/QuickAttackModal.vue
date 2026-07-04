@@ -19,8 +19,14 @@ const handleKeydown = (e) => {
     }
 };
 
-onMounted(()   => window.addEventListener('keydown', handleKeydown));
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
+onMounted(()   => {
+    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('open-quick-attack', open);
+});
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('open-quick-attack', open);
+});
 
 // ── Form ─────────────────────────────────────────────────────────────────────
 const form = useForm({
