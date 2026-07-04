@@ -6,7 +6,7 @@ use App\Models\Debt;
 use App\Services\BpdExchangeRateService;
 use App\Services\CombatService;
 use App\Services\DebtService;
-use App\Traits\ChecksAchievements;
+use App\Jobs\EvaluateAchievementsJob;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Gate;
 
 class DebtController extends Controller
 {
-    use ChecksAchievements;
+
     public function __construct(
         private readonly DebtService            $debtService,
         private readonly BpdExchangeRateService $rateService,
@@ -106,11 +106,11 @@ class DebtController extends Controller
         // CombatService handles defeat detection and XP award internally.
         $this->combatService->processAttack($user, $dopCost);
 
-        // ── Achievement checks ───────────────────────────────────────────────
-        $this->checkAchievements($user, 'debt_payment_made');
+        // ── Achievement checks (async) ────────────────────────────────────────
+        EvaluateAchievementsJob::dispatch($user, 'debt_payment_made');
         $debt->refresh();
         if ($debt->balance <= 0) {
-            $this->checkAchievements($user, 'debt_eliminated');
+            EvaluateAchievementsJob::dispatch($user, 'debt_eliminated');
         }
 
         return redirect()->back()->with('success', 'Disparo certero. Saldo actualizado.');
