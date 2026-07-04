@@ -33,7 +33,6 @@ onUnmounted(() => {
     clearTimeout(timeoutId);
 });
 
-const isSidebarOpen  = ref(false);
 const isUserMenuOpen = ref(false);
 const userMenuRef    = ref(null);
 
@@ -71,12 +70,6 @@ watch(
     },
     { deep: true }
 );
-
-const toggleBodyScroll = () => {
-    document.body.style.overflow = isSidebarOpen.value ? 'hidden' : '';
-};
-const closeSidebar = () => { isSidebarOpen.value = false;  toggleBodyScroll(); };
-const openSidebar  = () => { isSidebarOpen.value = true;   toggleBodyScroll(); };
 
 const logout = () => {
     isUserMenuOpen.value = false;
@@ -124,41 +117,43 @@ onUnmounted(() => {
             <!-- ═══ TOP NAVBAR ═══ -->
             <nav class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div class="flex h-16 items-center justify-between">
+                    <div class="flex h-16 items-center gap-4">
 
-                        <!-- Left: logo + nav links -->
-                        <div class="flex items-center gap-6">
+                        <!-- Left col: logo -->
+                        <div class="flex flex-1 justify-start">
                             <Link :href="route('dashboard')" class="flex items-center gap-2 group flex-shrink-0">
                                 <span class="text-2xl group-hover:scale-110 transition-transform">⚔️</span>
                                 <span class="text-white font-black tracking-tight hidden sm:block">Finanzas<span class="text-blue-400">RPG</span></span>
                             </Link>
-
-                            <div v-if="!route().current('dashboard')" class="hidden lg:flex items-center gap-1">
-                                <Link :href="route('presupuesto')"
-                                    :class="route().current('presupuesto') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                                    class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
-                                    🛡️ Presupuesto
-                                </Link>
-                                <Link :href="route('deudas')"
-                                    :class="route().current('deudas') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                                    class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
-                                    🔥 Deudas
-                                </Link>
-                                <Link :href="route('metas')"
-                                    :class="route().current('metas') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                                    class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
-                                    🎯 Metas
-                                </Link>
-                                <Link :href="route('historial')"
-                                    :class="route().current('historial') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                                    class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
-                                    🗂️ Historial
-                                </Link>
-                            </div>
                         </div>
 
-                        <!-- Right: user menu (desktop) + hamburger (mobile) -->
-                        <div class="flex items-center gap-3">
+                        <!-- Center col: nav links — always visible, dead-center -->
+                        <div class="hidden lg:flex flex-[2] justify-center items-center gap-2">
+                            <Link :href="route('presupuesto')"
+                                :class="route().current('presupuesto') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
+                                class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
+                                🛡️ Presupuesto
+                            </Link>
+                            <Link :href="route('deudas')"
+                                :class="route().current('deudas') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
+                                class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
+                                🔥 Deudas
+                            </Link>
+                            <Link :href="route('metas')"
+                                :class="route().current('metas') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
+                                class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
+                                🎯 Metas
+                            </Link>
+                            <Link :href="route('historial')"
+                                :class="route().current('historial') ? 'bg-slate-800 text-white border-slate-700' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
+                                class="px-3 py-2 rounded-lg text-sm font-bold transition-all border flex items-center gap-1.5">
+                                🗂️ Historial
+                            </Link>
+                        </div>
+
+                        <!-- Right col: user menu (desktop) + hamburger (mobile) -->
+                        <div class="flex flex-1 justify-end items-center gap-3">
+
 
                             <!-- Desktop user dropdown -->
                             <div ref="userMenuRef" class="relative hidden lg:block">
@@ -231,86 +226,10 @@ onUnmounted(() => {
                                 </Transition>
                             </div>
 
-                            <!-- Mobile hamburger — hidden on mobile (replaced by bottom nav), visible on sm only if needed -->
-                            <button @click="openSidebar"
-                                class="inline-flex lg:hidden items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
+                        </div><!-- end: right col -->
+                    </div><!-- end: flex h-16 row -->
+                </div><!-- end: max-w-7xl -->
             </nav>
-
-            <!-- ═══ MOBILE SIDEBAR OVERLAY ═══ -->
-            <transition
-                enter-active-class="transition-opacity ease-linear duration-300"
-                enter-from-class="opacity-0" enter-to-class="opacity-100"
-                leave-active-class="transition-opacity ease-linear duration-300"
-                leave-from-class="opacity-100" leave-to-class="opacity-0">
-                <div v-if="isSidebarOpen" @click="closeSidebar" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[60] lg:hidden"></div>
-            </transition>
-
-            <!-- ═══ MOBILE SIDEBAR PANEL ═══ -->
-            <transition
-                enter-active-class="transition ease-in-out duration-300 transform"
-                enter-from-class="-translate-x-full" enter-to-class="translate-x-0"
-                leave-active-class="transition ease-in-out duration-300 transform"
-                leave-from-class="translate-x-0" leave-to-class="-translate-x-full">
-
-                <div v-if="isSidebarOpen" class="fixed inset-y-0 left-0 w-72 bg-slate-900/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.5)] z-[60] lg:hidden flex flex-col border-r border-slate-800">
-
-                    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl">⚔️</span>
-                            <span class="text-white font-black tracking-tight">Centro de Mando</span>
-                        </div>
-                        <button @click="closeSidebar" class="text-slate-400 hover:text-white">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="px-6 py-4 bg-slate-800/30 border-b border-slate-800">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-lg">
-                                {{ page.props.auth.user.name.charAt(0).toUpperCase() }}
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <div class="text-sm font-bold text-white">{{ page.props.auth.user.name }}</div>
-                                    <!-- Streak badge in sidebar -->
-                                    <span
-                                        :class="currentStreak > 2
-                                            ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] font-black'
-                                            : 'text-slate-500 font-semibold'"
-                                        class="flex items-center gap-0.5 text-xs tabular-nums"
-                                    >🔥{{ currentStreak }}</span>
-                                </div>
-                                <div class="text-xs text-slate-500">{{ page.props.auth.user.email }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                        <Link :href="route('historial')" @click="closeSidebar"
-                              :class="route().current('historial') ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white border-transparent'"
-                              class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border">
-                            <span>🗂️</span> Historial
-                        </Link>
-                    </div>
-
-                    <div class="p-4 border-t border-slate-800">
-                        <button @click="logout"
-                              class="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl text-sm font-bold transition-colors">
-                            <span>🚪</span> Abortar Misión
-                        </button>
-                    </div>
-                </div>
-            </transition>
 
             <!-- ═══ OPTIONAL PAGE HEADER ═══ -->
             <header class="bg-slate-900 border-b border-slate-800" v-if="$slots.header">

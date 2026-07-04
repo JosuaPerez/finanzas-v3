@@ -33,7 +33,7 @@ const closeModal = () => {
     <section class="bg-slate-900/80 backdrop-blur-sm border border-red-900/40 ring-1 ring-red-500/10 sm:rounded-3xl shadow-xl p-6 sm:p-8">
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                💀 Zona de Peligro
+                💥 Protocolo de Autodestrucción
             </h2>
             <p class="mt-1 text-sm text-slate-400">
                 Una vez que elimines tu cuenta, todos tus datos serán destruidos permanentemente. Esta acción no se puede deshacer.

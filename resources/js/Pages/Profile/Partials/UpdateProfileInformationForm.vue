@@ -20,7 +20,7 @@ const form = useForm({
         <!-- Section header -->
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                🪪 Identidad del Comandante
+                🪪 Identificación del Comandante
             </h2>
             <p class="mt-1 text-sm text-slate-400">
                 Actualiza el nombre y la dirección de correo asociados a tu cuenta.

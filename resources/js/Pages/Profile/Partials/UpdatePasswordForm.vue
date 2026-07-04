@@ -34,7 +34,7 @@ const updatePassword = () => {
     <section class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 sm:p-8">
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                🔐 Cambiar Contraseña
+                🔐 Credenciales de Seguridad
             </h2>
             <p class="mt-1 text-sm text-slate-400">
                 Usa una contraseña larga y aleatoria para mantener tu base segura.
