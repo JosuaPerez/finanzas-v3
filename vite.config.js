@@ -18,21 +18,13 @@ export default defineConfig({
             },
         }),
         VitePWA({
-            // autoUpdate: silently installs new SW in background, activates on next
-            // page load. No "update available" prompt needed for a finance app.
             registerType: 'autoUpdate',
-
-            // Vite writes the SW into /build/ alongside the other assets.
-            // Laravel's Vite plugin sets the correct <script> src from there.
-            outDir: 'public/build',
-
-            // The SW must be importable from the root, not from /build/.
-            // injectRegister: null because we wire registration manually in app.js
-            // so we can silence console errors in development.
+            
+            // CORRECCIÓN 1: El soldado debe vigilar desde la entrada principal
+            outDir: 'public',
+            buildBase: '/build/',
             injectRegister: null,
 
-            // Manifest is served at /manifest.webmanifest (auto-linked in <head>
-            // by vite-plugin-pwa via the Vite virtual:pwa-info module).
             manifest: {
                 name:             'FinanzasRPG',
                 short_name:       'F-RPG',
@@ -46,47 +38,51 @@ export default defineConfig({
                 lang:             'es',
                 icons: [
                     {
-                        src:   '/pwa-192x192.png',
-                        sizes: '192x192',
-                        type:  'image/png',
-                        purpose: 'any',
+                        src:      '/pwa-192x192.png',
+                        sizes:    '192x192',
+                        type:     'image/png',
+                        purpose:  'any',
                     },
                     {
-                        src:   '/pwa-512x512.png',
-                        sizes: '512x512',
-                        type:  'image/png',
-                        purpose: 'any maskable',
+                        src:      '/pwa-512x512.png',
+                        sizes:    '512x512',
+                        type:     'image/png',
+                        purpose:  'any maskable',
                     },
                 ],
             },
 
             workbox: {
-                // ── Precache ───────────────────────────────────────────────────
-                // Only precache the built assets (JS, CSS). HTML is intentionally
-                // excluded — Inertia pages are server-rendered and must be fresh.
                 globPatterns: ['**/*.{js,css,woff,woff2}'],
+                // Ajustamos la ruta para que busque dentro del build de Laravel
                 globDirectory: 'public/build',
-
-                // Remove stale precache entries when a new SW activates.
                 cleanupOutdatedCaches: true,
 
-                // ── Runtime caching rules ──────────────────────────────────────
                 runtimeCaching: [
+                    // CORRECCIÓN 2: El Escudo Anti-Pantalla Blanca (NetworkFirst para HTML)
                     {
-                        // CacheFirst for Vite-fingerprinted build assets.
-                        // Safe: filenames change on every build, so stale is impossible.
+                        urlPattern: ({ request }) => request.mode === 'navigate',
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'html-cache',
+                            networkTimeoutSeconds: 3, // Si Render tarda más de 3s, carga la interfaz offline
+                            expiration: {
+                                maxEntries: 10,
+                                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 semana
+                            },
+                        },
+                    },
+                    {
                         urlPattern: /^https?:\/\/.*\/build\/.*/i,
                         handler:    'CacheFirst',
                         options: {
                             cacheName:         'build-assets',
                             expiration: {
-                                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                                maxAgeSeconds: 60 * 60 * 24 * 365,
                             },
                         },
                     },
                     {
-                        // StaleWhileRevalidate for Google Fonts (used by Figtree).
-                        // Returns cached font instantly, fetches update in background.
                         urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
                         handler:    'StaleWhileRevalidate',
                         options: {
@@ -98,23 +94,19 @@ export default defineConfig({
                         },
                     },
                     {
-                        // StaleWhileRevalidate for the BPD exchange-rate API
-                        // so /deudas loads instantly even when offline.
                         urlPattern: /^https:\/\/api\.bpd\.com\.do\/.*/i,
                         handler:    'StaleWhileRevalidate',
                         options: {
                             cacheName:         'api-bpd',
                             expiration: {
                                 maxEntries:    5,
-                                maxAgeSeconds: 60 * 60 * 12, // matches BpdExchangeRateService TTL
+                                maxAgeSeconds: 60 * 60 * 12,
                             },
                         },
                     },
                 ],
             },
 
-            // Dev options: keep the SW disabled in `vite dev` to avoid cache
-            // interference when iterating on UI. Enable only in production builds.
             devOptions: {
                 enabled: false,
             },
