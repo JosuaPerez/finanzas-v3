@@ -154,6 +154,20 @@ onUnmounted(() => {
                         <!-- Right col: user menu (desktop) + hamburger (mobile) -->
                         <div class="flex flex-1 justify-end items-center gap-3">
 
+                            <!-- Mobile logout — top-right, visible only on small screens -->
+                            <Link
+                                id="mobile-header-logout"
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                class="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200 text-xs font-bold active:scale-95"
+                            >
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                <span class="hidden sm:inline">Salir</span>
+                            </Link>
+
 
                             <!-- Desktop user dropdown -->
                             <div ref="userMenuRef" class="relative hidden lg:block">
@@ -339,6 +353,7 @@ onUnmounted(() => {
                     <span v-if="route().current('profile.edit')" class="w-1 h-1 rounded-full bg-violet-400 mt-0.5"></span>
                     <span v-else class="w-1 h-1 mt-0.5"></span>
                 </Link>
+
             </nav>
             <!-- ═══ QUICK ATTACK MODAL ═══ -->
             <QuickAttackModal />
