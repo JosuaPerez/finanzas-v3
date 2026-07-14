@@ -121,7 +121,7 @@ Route::get('/deudas', function () {
 
     // 3. Jefes Caídos (campaign_bosses derrotados)
     $fallenBosses = \App\Models\CampaignBoss::where('user_id', $uid)
-        ->where('is_defeated', true)
+        ->where('is_defeated', 'true')
         ->orderByDesc('updated_at')
         ->get(['id', 'name', 'experience_reward', 'updated_at']);
 
