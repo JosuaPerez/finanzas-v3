@@ -63,7 +63,7 @@ const submit = () => {
                 <div>
                     <label for="email" class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico</label>
                     <input id="email" type="email"
-                        class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm bg-slate-50"
+                        class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-xs bg-slate-50"
                         v-model="form.email" required autofocus autocomplete="username"
                         placeholder="soldado@ejemplo.com" />
                     <p v-if="form.errors.email" class="mt-1 text-xs text-red-600 font-bold">{{ form.errors.email }}</p>
@@ -75,12 +75,12 @@ const submit = () => {
                     <!-- Contenedor relativo para posicionar el ojito -->
                     <div class="relative">
                         <input id="password" :type="showPassword ? 'text' : 'password'"
-                            class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm bg-slate-50 pr-10"
+                            class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-xs bg-slate-50 pr-10"
                             v-model="form.password" required autocomplete="current-password" placeholder="••••••••" />
                         
                         <!-- Botón del ojito -->
                         <button type="button" @click="togglePassword"
-                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors">
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-hidden transition-colors">
                             
                             <!-- Icono Ojo Abierto -->
                             <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -101,7 +101,7 @@ const submit = () => {
                 <div class="flex items-center justify-between">
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" name="remember" v-model="form.remember"
-                            class="rounded border-slate-300 text-blue-600 shadow-sm focus:ring-blue-500" />
+                            class="rounded-sm border-slate-300 text-blue-600 shadow-xs focus:ring-blue-500" />
                         <span class="ml-2 text-sm text-slate-600 font-medium">Recordarme</span>
                     </label>
 
@@ -120,17 +120,17 @@ const submit = () => {
 
             <!-- ── Google SSO ─────────────────────────────────────────── -->
             <div class="relative flex items-center my-5">
-                <div class="flex-grow border-t border-slate-200"></div>
-                <span class="flex-shrink mx-3 text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                <div class="grow border-t border-slate-200"></div>
+                <span class="shrink mx-3 text-xs font-semibold text-slate-400 uppercase tracking-widest">
                     O continuar con
                 </span>
-                <div class="flex-grow border-t border-slate-200"></div>
+                <div class="grow border-t border-slate-200"></div>
             </div>
 
-            <a href="/auth/google"
-               class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-800 font-semibold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+            <a v-if="!$page.props.nativeRuntime" href="/auth/google"
+               class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-800 font-semibold py-3 px-4 rounded-xl shadow-xs hover:shadow-md transition-all duration-200">
                 <!-- Google "G" logo SVG -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-5 h-5 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-5 h-5 shrink-0">
                     <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v8.51h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.14z"/>
                     <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>

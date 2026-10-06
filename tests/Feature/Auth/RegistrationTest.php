@@ -137,6 +137,7 @@ function makeFakeGoogleUser(string $id, string $name, string $email): SocialiteU
     $fake->allows('getId')->andReturn($id);
     $fake->allows('getName')->andReturn($name);
     $fake->allows('getEmail')->andReturn($email);
+    $fake->allows('getRaw')->andReturn(['email_verified' => true]);
     return $fake;
 }
 

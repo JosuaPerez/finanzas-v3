@@ -145,7 +145,7 @@ it('deducts the budget remaining and stores a payment receipt on a successful at
     expect((float) $details['debt_payments'][0]['amount'])->toBe(5000.0);
 });
 
-it('clamps the debt balance to zero when the attack amount exceeds the remaining balance', function () {
+it('rejects a payment exceeding the outstanding debt instead of recording an inflated payment', function () {
     $user = User::factory()->create();
 
     $debt = Debt::create([
@@ -160,12 +160,12 @@ it('clamps the debt balance to zero when the attack amount exceeds the remaining
 
     $this->actingAs($user)
         ->post(route('debts.pay', $debt->id), ['amount' => 9999])
-        ->assertSessionHasNoErrors();
+        ->assertInvalid(['amount']);
 
-    // Balance must be 0, never negative — no negative HP in this game
+    // No payment was recorded; the balance remains unchanged.
     $this->assertDatabaseHas('debts', [
         'id'      => $debt->id,
-        'balance' => 0,
+        'balance' => 100,
     ]);
 });
 
@@ -337,17 +337,17 @@ it('throws a municion validation error when a DOP attack exceeds available capit
         ->assertInvalid(['municion' => 'Munición insuficiente (Capital Libre) para este ataque.']);
 });
 
-it('throws a municion validation error when a USD attack converted to DOP exceeds available capital libre', function () {
+it('throws a municion validation error when a USD payment exceeds its USD budget available capital libre', function () {
     $user = User::factory()->create();
 
-    // Fallback rate is 60.50. Let's make remaining = 5000 DOP.
-    // An attack of 100 USD = 6050 DOP > 5000 DOP.
+    // A payment is compared with a budget in the same currency.
     Budget::create([
         'user_id'              => $user->id,
         'title'                => 'Presupuesto USD',
+        'currency'             => 'USD',
         'income'               => 30000,
         'fixed_expenses_total' => 25000,
-        'details'              => json_encode(['remaining' => 5000]),
+        'details'              => json_encode(['remaining' => 50]),
     ]);
 
     $debt = Debt::create([
@@ -365,14 +365,14 @@ it('throws a municion validation error when a USD attack converted to DOP exceed
         ->assertInvalid(['municion' => 'Munición insuficiente (Capital Libre) para este ataque.']);
 });
 
-it('allows a USD attack when the converted DOP cost is within available capital libre', function () {
+it('allows a USD payment within its USD budget', function () {
     $user = User::factory()->create();
 
-    // Fallback rate is 60.50. Let's make remaining = 10000 DOP.
-    // An attack of 100 USD = 6050 DOP <= 10000 DOP.
+    // A payment is compared with a budget in the same currency.
     Budget::create([
         'user_id'              => $user->id,
         'title'                => 'Presupuesto Suficiente USD',
+        'currency'             => 'USD',
         'income'               => 50000,
         'fixed_expenses_total' => 20000,
         'details'              => json_encode(['remaining' => 10000]),

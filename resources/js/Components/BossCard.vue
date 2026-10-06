@@ -34,7 +34,7 @@ const emit = defineEmits(['attack', 'abort']);
 
 <template>
     <div
-        class="p-6 md:p-8 bg-slate-900/80 backdrop-blur-sm rounded-3xl flex flex-col relative overflow-hidden group shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/60 ring-1 ring-white/5"
+        class="p-6 md:p-8 bg-slate-900/80 backdrop-blur-xs rounded-3xl flex flex-col relative overflow-hidden group shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/60 ring-1 ring-white/5"
         :class="{ 'ring-2 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]': index === 0 && debt.balance > 0 }"
     >
         <!-- Luces de Alarma para el objetivo principal -->
@@ -79,7 +79,7 @@ const emit = defineEmits(['attack', 'abort']);
                     HP del Jefe
                     <span
                         v-if="getHPStats(debt).isCritical"
-                        class="animate-pulse text-red-400 text-[10px] border border-red-500/50 bg-red-500/20 px-1 rounded"
+                        class="animate-pulse text-red-400 text-[10px] border border-red-500/50 bg-red-500/20 px-1 rounded-sm"
                     >¡CRÍTICO!</span>
                 </span>
                 <span class="text-white font-mono font-bold text-sm">
@@ -89,11 +89,11 @@ const emit = defineEmits(['attack', 'abort']);
             <div class="w-full bg-slate-800 rounded-full h-4 overflow-hidden relative border border-slate-700/50">
                 <!-- Color de la barra animada -->
                 <div
-                    class="bg-gradient-to-r from-red-700 to-red-400 h-full transition-all duration-1000 ease-out relative"
+                    class="bg-linear-to-r from-red-700 to-red-400 h-full transition-all duration-1000 ease-out relative"
                     :style="{ width: getHPStats(debt).percent + '%' }"
                 >
                     <!-- Efecto de brillo en la barra -->
-                    <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-[4px]"></div>
+                    <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-xs"></div>
                 </div>
             </div>
 

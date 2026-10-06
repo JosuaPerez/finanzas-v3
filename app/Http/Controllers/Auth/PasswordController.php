@@ -17,12 +17,16 @@ class PasswordController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password' => \App\Support\PasswordPolicy::rules(),
         ]);
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'remember_token' => \Illuminate\Support\Str::random(60),
         ]);
+
+        $request->user()->tokens()->delete();
+        \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $request->user()->id)->where('id', '!=', $request->session()->getId())->delete();
 
         return back();
     }

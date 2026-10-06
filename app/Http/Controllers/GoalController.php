@@ -28,8 +28,8 @@ class GoalController extends Controller
 
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
-            'target_amount'  => 'required|numeric|min:0.01',
-            'current_amount' => 'nullable|numeric|min:0',
+            'target_amount'  => 'required|numeric|min:0.01|max:99999999.99|decimal:0,2',
+            'current_amount' => 'nullable|numeric|min:0|max:99999999.99|decimal:0,2',
             'currency'       => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
             'deadline'       => 'nullable|date',
         ]);
@@ -46,7 +46,7 @@ class GoalController extends Controller
         Cache::forget('dashboard_data_user_' . $request->user()->id);
 
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|min:0.01|max:99999999.99|decimal:0,2',
         ]);
 
         $this->goalService->addFunds($goal, (float) $validated['amount']);

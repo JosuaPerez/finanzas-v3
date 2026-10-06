@@ -27,9 +27,9 @@ class DebtController extends Controller
 
         $request->validate([
             'name'                  => 'required|string|max:255',
-            'balance'               => 'required|numeric|min:0',
+            'balance'               => 'required|numeric|min:0|max:99999999.99|decimal:0,2',
             'interest_rate'         => 'required|numeric|min:0',
-            'minimum_payment'       => 'required|numeric|min:0',
+            'minimum_payment'       => 'required|numeric|min:0|max:99999999.99|decimal:0,2',
             'type'                  => 'required|string|in:loan,credit_card',
             'currency'              => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
             'credit_limit'          => 'nullable|numeric|min:0',
@@ -67,7 +67,7 @@ class DebtController extends Controller
         Cache::forget('dashboard_data_user_' . $request->user()->id);
 
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.$debt->balance, 'decimal:0,2'],
         ]);
 
         // ── Ammunition (Capital Libre) guard ─────────────────────────────────
@@ -84,19 +84,13 @@ class DebtController extends Controller
             : [];
         $capitalLibre = (float) ($details['remaining'] ?? 0);
 
-        // Only the existing USD-debt / DOP-budget pair has a conversion.
-        // Same-currency financial amounts are never converted.
-        $sameCurrency = ! $budget || $budget->currency === $debt->currency;
-        $legacyConversion = $budget && $budget->currency === 'DOP' && $debt->currency === 'USD';
-        if (! $sameCurrency && ! $legacyConversion) {
+        // Financial payments never use the RPG service's fallback exchange rate.
+        if ($budget && $budget->currency !== $debt->currency) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'amount' => 'La deuda y el presupuesto tienen monedas diferentes. No se realizará una conversión automática.',
+                'amount' => 'La deuda y el presupuesto tienen monedas diferentes. Crea un presupuesto en la moneda de la deuda; no se realizará una conversión automática.',
             ]);
         }
         $budgetCost = (float) $validated['amount'];
-        if ($legacyConversion) {
-            $budgetCost *= $this->rateService->getUsdSellRate();
-        }
 
         if ($capitalLibre > 0 && $budgetCost > $capitalLibre) {
             throw \Illuminate\Validation\ValidationException::withMessages([
@@ -112,7 +106,7 @@ class DebtController extends Controller
         // Preserve the existing USD-to-DOP normalization for RPG damage.
         // It does not change the currency of the financial receipt.
         // CombatService handles defeat detection and XP award internally.
-        $damage = $debt->currency === 'USD' && ! $legacyConversion
+        $damage = $debt->currency === 'USD'
             ? (float) $validated['amount'] * $this->rateService->getUsdSellRate()
             : $budgetCost;
         $this->combatService->processAttack($user, $damage);

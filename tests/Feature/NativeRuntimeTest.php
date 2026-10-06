@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('uses local services in native runtime and preserves the device database path', function () {
+    $originalConnection = config('database.default');
     config([
         'nativephp-internal.running' => true,
         'database.default' => 'mysql',
@@ -16,11 +17,17 @@ it('uses local services in native runtime and preserves the device database path
 
     (new AppServiceProvider(app()))->boot();
 
-    expect(config('database.default'))->toBe('sqlite')
-        ->and(config('database.connections.sqlite.database'))->toBe('/device/database/database.sqlite')
-        ->and(config('cache.default'))->toBe('file')
-        ->and(config('queue.default'))->toBe('sync')
-        ->and(config('session.driver'))->toBe('file');
+    try {
+        expect(config('database.default'))->toBe('sqlite')
+            ->and(config('database.connections.sqlite.database'))->toBe('/device/database/database.sqlite')
+            ->and(config('cache.default'))->toBe('file')
+            ->and(config('queue.default'))->toBe('sync')
+            ->and(config('session.driver'))->toBe('file')
+            ->and(config('session.encrypt'))->toBeTrue()
+            ->and(config('session.lifetime'))->toBe(43200);
+    } finally {
+        config(['database.default' => $originalConnection]);
+    }
 });
 
 it('keeps web service configuration and production https enforcement', function () {
@@ -37,12 +44,17 @@ it('keeps web service configuration and production https enforcement', function 
 });
 
 it('does not force web https inside the embedded production runtime', function () {
+    $originalConnection = config('database.default');
     config(['nativephp-internal.running' => true, 'app.env' => 'production']);
     URL::forceScheme(null);
 
     (new AppServiceProvider(app()))->boot();
 
-    expect(url('/login'))->toStartWith('http://');
+    try {
+        expect(url('/login'))->toStartWith('http://');
+    } finally {
+        config(['database.default' => $originalConnection]);
+    }
 });
 
 it('exposes runtime identity to the frontend and avoids remote fonts on native login', function () {

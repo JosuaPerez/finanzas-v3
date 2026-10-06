@@ -27,11 +27,16 @@ class AppServiceProvider extends ServiceProvider
 
         if ($nativeRuntime) {
             // The embedded app has no Redis server or queue worker. Keep the
-            // database path provided by NativePHP so device data survives updates.
+            // database path provided by NativePHP. Financial requests use the backend API.
             config([
                 'database.default' => 'sqlite',
                 'cache.default' => 'file',
                 'session.driver' => 'file',
+                'session.encrypt' => true,
+                'session.lifetime' => (int) config('mobile.token_days', 30) * 1440,
+                'session.expire_on_close' => false,
+                'session.domain' => null,
+                'session.secure' => false,
                 'queue.default' => 'sync',
             ]);
         }

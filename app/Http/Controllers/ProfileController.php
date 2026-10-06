@@ -21,6 +21,7 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'hasPassword' => $request->user()->password !== null,
         ]);
     }
 
@@ -60,15 +61,25 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        if ($request->user()->password !== null) {
+            $request->validate(['password' => ['required', 'current_password']]);
+        } elseif ($request->session()->get('google_confirmed_user_id') !== $request->user()->id
+            || $request->session()->get('google_confirmed_at', 0) < now()->subMinutes(5)->timestamp) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'password' => 'Vuelve a iniciar sesión con Google y confirma la eliminación dentro de cinco minutos.',
+            ]);
+        }
 
         $user = $request->user();
 
-        Auth::logout();
+        Auth::guard('web')->logout();
 
-        $user->delete();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+            $user->tokens()->delete();
+            \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $user->id)->delete();
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            $user->delete();
+        });
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

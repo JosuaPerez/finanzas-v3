@@ -46,7 +46,7 @@ const submit = () => {
             </div>
 
             <div v-if="status"
-                class="mb-6 font-bold text-sm text-green-700 bg-green-50 border border-green-200 p-4 rounded-xl text-center shadow-sm">
+                class="mb-6 font-bold text-sm text-green-700 bg-green-50 border border-green-200 p-4 rounded-xl text-center shadow-xs">
                 ✅ {{ status }}
             </div>
 
@@ -54,7 +54,7 @@ const submit = () => {
                 <div>
                     <label for="email" class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico</label>
                     <input id="email" type="email"
-                        class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm bg-slate-50"
+                        class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-xs bg-slate-50"
                         v-model="form.email" required autofocus autocomplete="username"
                         placeholder="soldado@ejemplo.com" />
                     <p v-if="form.errors.email" class="mt-2 text-xs text-red-600 font-bold">{{ form.errors.email }}</p>

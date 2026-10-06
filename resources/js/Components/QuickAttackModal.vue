@@ -10,6 +10,7 @@ const dialog = ref(null);
 const amountInput = ref(null);
 const isOpen = ref(false);
 const amountText = ref("");
+const requestId = ref(null);
 const viewportHeight = ref(null);
 let previousOverflow = "";
 const form = useForm({
@@ -17,6 +18,7 @@ const form = useForm({
     debt_id: "",
     descripcion: "",
     currency: currency.value,
+    already_budgeted: false,
 });
 const debts = computed(() => page.props.movementDebts ?? []);
 const selectedDebt = computed(() =>
@@ -27,10 +29,9 @@ const recordCurrency = computed(() =>
 );
 const mismatch = computed(
     () =>
-        form.type === "payment" &&
-        selectedDebt.value &&
         page.props.movementBudget &&
-        selectedDebt.value.currency !== page.props.movementBudget.currency,
+        recordCurrency.value &&
+        recordCurrency.value !== page.props.movementBudget.currency,
 );
 const parsed = computed(() => parseAmount(amountText.value));
 const canSubmit = computed(
@@ -46,7 +47,8 @@ const updateViewport = () => {
 };
 const open = async (event) => {
     if (isOpen.value) return;
-    if (!amountText.value) form.currency = currency.value;
+    if (!amountText.value) form.currency = page.props.movementBudget?.currency ?? currency.value;
+    if (!requestId.value) requestId.value = page.props.movementRequestId;
     if (event?.detail?.type === "payment") {
         form.type = "payment";
         form.debt_id = event.detail.debtId;
@@ -80,8 +82,10 @@ const submit = () => {
                   monto: parsed.value,
                   descripcion: form.descripcion.trim(),
                   currency: form.currency,
+                  already_budgeted: form.already_budgeted,
+                  request_id: requestId.value,
               }
-            : { amount: parsed.value },
+            : { amount: parsed.value, request_id: requestId.value },
     );
     form.post(
         form.type === "expense"
@@ -97,6 +101,7 @@ const submit = () => {
                 form.reset();
                 form.clearErrors();
                 amountText.value = "";
+                requestId.value = null;
             },
         },
     );
@@ -327,10 +332,19 @@ onUnmounted(() => {
                         <div
                             class="rounded-xl bg-slate-950 p-4 text-sm leading-relaxed text-slate-400"
                         >
-                            <p v-if="form.type === 'expense'">
-                                Este gasto se guarda en tu historial. No
-                                descuenta automáticamente el presupuesto ni paga
-                                una deuda.
+                            <label v-if="form.type === 'expense' && page.props.movementBudget && !mismatch" class="mb-3 flex min-h-11 items-center gap-3 text-slate-200">
+                                <input type="checkbox" v-model="form.already_budgeted" class="h-5 w-5 rounded-sm" />
+                                Ya incluido en los gastos fijos de este presupuesto
+                            </label>
+                            <p v-if="form.type === 'expense' && mismatch">
+                                Elige {{ page.props.movementBudget.currency }}, la moneda de tu presupuesto. No se convierten importes automáticamente.
+                            </p>
+                            <p v-else-if="form.type === 'expense' && page.props.movementBudget">
+                                {{ form.already_budgeted ? 'Se guardará en el historial sin descontarlo otra vez.' : 'Se descontará del disponible del presupuesto. Si lo supera, el disponible quedará negativo.' }}
+                                No registra un pago de deuda.
+                            </p>
+                            <p v-else-if="form.type === 'expense'">
+                                Se guardará en el historial. Como no tienes presupuesto, no se descontará de un disponible.
                             </p>
                             <p v-else-if="mismatch">
                                 La deuda está en {{ selectedDebt.currency }} y
@@ -363,6 +377,9 @@ onUnmounted(() => {
                                 Vas a registrar
                                 {{ money(parsed, recordCurrency) }}.
                             </p>
+                            <p v-if="form.errors.server" role="alert" class="mt-2 text-red-300">{{ form.errors.server }}</p>
+                            <p v-if="form.errors.request_id" role="alert" class="mt-2 text-red-300">{{ form.errors.request_id }}</p>
+                            <p v-if="form.errors.municion" role="alert" class="mt-2 text-red-300">{{ form.errors.municion }}</p>
                         </div>
                     </fieldset>
                     <button

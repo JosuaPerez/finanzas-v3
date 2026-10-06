@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { nextTick, ref } from 'vue';
 
 const confirmingUserDeletion = ref(false);
+defineProps({ hasPassword: { type: Boolean, default: true } });
 const passwordInput          = ref(null);
 
 const form = useForm({ password: '' });
@@ -14,6 +15,7 @@ const confirmUserDeletion = () => {
 };
 
 const deleteUser = () => {
+    if (form.processing) return;
     form.delete(route('profile.destroy'), {
         preserveScroll: true,
         onSuccess:  () => closeModal(),
@@ -30,7 +32,7 @@ const closeModal = () => {
 </script>
 
 <template>
-    <section class="bg-slate-900/80 backdrop-blur-sm border border-red-900/40 ring-1 ring-red-500/10 sm:rounded-3xl shadow-xl p-6 sm:p-8">
+    <section class="bg-slate-900/80 backdrop-blur-xs border border-red-900/40 ring-1 ring-red-500/10 sm:rounded-3xl shadow-xl p-6 sm:p-8">
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
                 💥 Protocolo de Autodestrucción
@@ -72,16 +74,17 @@ const closeModal = () => {
                 >
                     <div class="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.7)] ring-1 ring-white/5 overflow-hidden">
                         <!-- Red danger stripe -->
-                        <div class="h-1 w-full bg-gradient-to-r from-red-600 via-red-500 to-orange-500"></div>
+                        <div class="h-1 w-full bg-linear-to-r from-red-600 via-red-500 to-orange-500"></div>
 
                         <div class="p-8">
                             <div class="text-4xl mb-4">⚠️</div>
                             <h2 class="text-xl font-black text-white mb-2">¿Confirmar eliminación?</h2>
                             <p class="text-sm text-slate-400 leading-relaxed mb-6">
-                                Esta acción destruirá tu cuenta permanentemente. Todos tus presupuestos, deudas y metas serán eliminados sin posibilidad de recuperación. Ingresa tu contraseña para confirmar.
+                                Se eliminarán tu cuenta, presupuestos, gastos, deudas y metas. {{ hasPassword ? 'Ingresa tu contraseña para confirmar.' : 'Confirma dentro de los cinco minutos posteriores a iniciar sesión con Google.' }}
                             </p>
 
                             <div class="mb-2">
+                                <template v-if="hasPassword">
                                 <label for="delete_password" class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                                     Contraseña de Confirmación
                                 </label>
@@ -92,9 +95,13 @@ const closeModal = () => {
                                     type="password"
                                     autocomplete="current-password"
                                     @keyup.enter="deleteUser"
-                                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-colors"
+                                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-colors"
                                     placeholder="••••••••"
                                 />
+                                </template>
+                                <a v-else-if="!$page.props.nativeRuntime" href="/auth/google" class="inline-flex min-h-11 items-center text-cyan-300 underline">Confirmar acceso con Google</a>
+                                <p v-else class="text-sm text-slate-300">Para esta cuenta de Google, confirma la eliminación desde la versión web.</p>
+                                <InputError :message="form.errors.server" class="mt-2" />
                                 <InputError :message="form.errors.password" class="mt-2" />
                             </div>
                         </div>

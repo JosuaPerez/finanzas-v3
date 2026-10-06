@@ -1,0 +1,54 @@
+name: Quality
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.5']
+        database: [sqlite, pgsql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: finanzas_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: ${{ matrix.database == 'sqlite' && ':memory:' || 'finanzas_test' }}
+      DB_USERNAME: postgres
+      DB_PASSWORD: ci-test-only
+      DB_SSLMODE: disable
+      PUPPETEER_SKIP_DOWNLOAD: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, bcmath, gd, zip, pdo_sqlite, pdo_pgsql
+          coverage: none
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --prefer-dist --no-interaction
+      - run: cp .env.example .env && php artisan key:generate
+      - run: npm ci
+      - run: npm run build
+      - run: node --test tests/Frontend/*.test.mjs
+      - run: php artisan test
+      - run: composer audit
+      - run: npm audit

@@ -21,14 +21,14 @@ import { Head } from '@inertiajs/vue3';
         <!-- ═══ NAVBAR ═══ -->
         <nav class="relative z-20 flex items-center justify-between px-3 sm:px-10 lg:px-16 py-3 sm:py-5 border-b border-slate-800/60 backdrop-blur-md bg-slate-950/70">
             <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div class="flex-shrink-0 w-7 h-7 sm:w-9 sm:h-9 bg-blue-500/20 border border-blue-500/40 rounded-xl flex items-center justify-center text-sm sm:text-xl shadow-[0_0_12px_rgba(59,130,246,0.3)]">
+                <div class="shrink-0 w-7 h-7 sm:w-9 sm:h-9 bg-blue-500/20 border border-blue-500/40 rounded-xl flex items-center justify-center text-sm sm:text-xl shadow-[0_0_12px_rgba(59,130,246,0.3)]">
                     ⚔️
                 </div>
                 <span class="font-black text-[13px] sm:text-lg tracking-tight text-white truncate">Finanzas<span class="text-blue-400">RPG</span></span>
             </div>
 
             <!-- Auth buttons: hidden on mobile, shown on md+ -->
-            <div class="hidden md:flex items-center gap-3 flex-shrink-0">
+            <div class="hidden md:flex items-center gap-3 shrink-0">
                 <Link
                     id="nav-login-btn"
                     :href="route('login')"
@@ -59,7 +59,7 @@ import { Head } from '@inertiajs/vue3';
             <h1 class="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
                 Tus finanzas.<br>
                 <span class="relative inline-block">
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-violet-400 to-indigo-400">
+                    <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-violet-400 to-indigo-400">
                         Tu campo de batalla.
                     </span>
                 </span>
@@ -86,7 +86,7 @@ import { Head } from '@inertiajs/vue3';
                 <Link
                     id="hero-login-btn"
                     :href="route('login')"
-                    class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-5 sm:py-4 rounded-2xl font-bold uppercase tracking-wider text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-slate-900/60 hover:bg-slate-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 text-lg sm:text-base"
+                    class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-5 sm:py-4 rounded-2xl font-bold uppercase tracking-wider text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 bg-slate-900/60 hover:bg-slate-800 backdrop-blur-xs transition-all duration-300 hover:-translate-y-1 text-lg sm:text-base"
                 >
                     Ya tengo cuenta
                 </Link>
@@ -101,9 +101,9 @@ import { Head } from '@inertiajs/vue3';
             <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 <!-- Card 1: Budget -->
-                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-blue-500/50 backdrop-blur-sm shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(37,99,235,0.15)] overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 group-hover:to-transparent transition-all duration-500 rounded-3xl pointer-events-none"></div>
-                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-blue-500/50 backdrop-blur-xs shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(37,99,235,0.15)] overflow-hidden">
+                    <div class="absolute inset-0 bg-linear-to-br from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 group-hover:to-transparent transition-all duration-500 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div class="w-14 h-14 bg-blue-500/15 border border-blue-500/30 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all duration-300">
                         🛡️
                     </div>
@@ -118,9 +118,9 @@ import { Head } from '@inertiajs/vue3';
                 </div>
 
                 <!-- Card 2: Debts — highlighted as primary -->
-                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-red-800/50 hover:border-red-500/70 backdrop-blur-sm shadow-xl shadow-red-950/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(239,68,68,0.15)] overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-br from-red-600/5 to-transparent rounded-3xl pointer-events-none"></div>
-                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent"></div>
+                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-red-800/50 hover:border-red-500/70 backdrop-blur-xs shadow-xl shadow-red-950/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(239,68,68,0.15)] overflow-hidden">
+                    <div class="absolute inset-0 bg-linear-to-br from-red-600/5 to-transparent rounded-3xl pointer-events-none"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-red-500/60 to-transparent"></div>
                     <!-- "CORE" badge -->
                     <div class="absolute top-5 right-5 px-2 py-0.5 bg-red-500/20 border border-red-500/40 rounded-full text-red-400 text-[10px] font-black uppercase tracking-wider">
                         Núcleo
@@ -139,9 +139,9 @@ import { Head } from '@inertiajs/vue3';
                 </div>
 
                 <!-- Card 3: Goals -->
-                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/50 backdrop-blur-sm shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(16,185,129,0.12)] overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/0 to-emerald-600/0 group-hover:from-emerald-600/5 group-hover:to-transparent transition-all duration-500 rounded-3xl pointer-events-none"></div>
-                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="group relative p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/50 backdrop-blur-xs shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(16,185,129,0.12)] overflow-hidden">
+                    <div class="absolute inset-0 bg-linear-to-br from-emerald-600/0 to-emerald-600/0 group-hover:from-emerald-600/5 group-hover:to-transparent transition-all duration-500 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-emerald-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div class="w-14 h-14 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all duration-300">
                         🎯
                     </div>
@@ -171,16 +171,16 @@ import { Head } from '@inertiajs/vue3';
                     <!-- Step 1 -->
                     <div class="flex items-stretch gap-6 px-6 pt-6 pb-0 rounded-t-2xl hover:bg-slate-900/50 transition-colors duration-200 group">
                         <!-- Left col: icon + connector going down -->
-                        <div class="flex flex-col items-center flex-shrink-0 hidden sm:flex">
-                            <div class="relative w-16 h-16 bg-blue-600/20 border border-blue-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(37,99,235,0.25)] group-hover:shadow-[0_0_24px_rgba(37,99,235,0.4)] transition-shadow flex-shrink-0">
+                        <div class="flex flex-col items-center shrink-0 hidden sm:flex">
+                            <div class="relative w-16 h-16 bg-blue-600/20 border border-blue-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(37,99,235,0.25)] group-hover:shadow-[0_0_24px_rgba(37,99,235,0.4)] transition-shadow shrink-0">
                                 <span class="text-2xl">🛡️</span>
                                 <span class="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full text-white text-xs font-black flex items-center justify-center">1</span>
                             </div>
                             <!-- Connector to step 2 -->
-                            <div class="w-px flex-1 mt-3 mb-0 bg-gradient-to-b from-blue-500/60 to-violet-500/40 min-h-[1.5rem]"></div>
+                            <div class="w-px flex-1 mt-3 mb-0 bg-linear-to-b from-blue-500/60 to-violet-500/40 min-h-6"></div>
                         </div>
                         <!-- Mobile: icon inline -->
-                        <div class="relative flex-shrink-0 w-16 h-16 bg-blue-600/20 border border-blue-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(37,99,235,0.25)] group-hover:shadow-[0_0_24px_rgba(37,99,235,0.4)] transition-shadow sm:hidden">
+                        <div class="relative shrink-0 w-16 h-16 bg-blue-600/20 border border-blue-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(37,99,235,0.25)] group-hover:shadow-[0_0_24px_rgba(37,99,235,0.4)] transition-shadow sm:hidden">
                             <span class="text-2xl">🛡️</span>
                             <span class="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full text-white text-xs font-black flex items-center justify-center">1</span>
                         </div>
@@ -192,15 +192,15 @@ import { Head } from '@inertiajs/vue3';
 
                     <!-- Step 2 -->
                     <div class="flex items-stretch gap-6 px-6 pt-0 pb-0 hover:bg-slate-900/50 transition-colors duration-200 group">
-                        <div class="flex flex-col items-center flex-shrink-0 hidden sm:flex">
-                            <div class="relative w-16 h-16 bg-red-600/20 border border-red-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_24px_rgba(239,68,68,0.35)] transition-shadow flex-shrink-0">
+                        <div class="flex flex-col items-center shrink-0 hidden sm:flex">
+                            <div class="relative w-16 h-16 bg-red-600/20 border border-red-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_24px_rgba(239,68,68,0.35)] transition-shadow shrink-0">
                                 <span class="text-2xl">⚔️</span>
                                 <span class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs font-black flex items-center justify-center">2</span>
                             </div>
                             <!-- Connector to step 3 -->
-                            <div class="w-px flex-1 mt-3 mb-0 bg-gradient-to-b from-violet-500/40 to-emerald-500/40 min-h-[1.5rem]"></div>
+                            <div class="w-px flex-1 mt-3 mb-0 bg-linear-to-b from-violet-500/40 to-emerald-500/40 min-h-6"></div>
                         </div>
-                        <div class="relative flex-shrink-0 w-16 h-16 bg-red-600/20 border border-red-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_24px_rgba(239,68,68,0.35)] transition-shadow sm:hidden">
+                        <div class="relative shrink-0 w-16 h-16 bg-red-600/20 border border-red-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_24px_rgba(239,68,68,0.35)] transition-shadow sm:hidden">
                             <span class="text-2xl">⚔️</span>
                             <span class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs font-black flex items-center justify-center">2</span>
                         </div>
@@ -212,14 +212,14 @@ import { Head } from '@inertiajs/vue3';
 
                     <!-- Step 3 (no connector below — final step) -->
                     <div class="flex items-start gap-6 px-6 pt-0 pb-6 rounded-b-2xl hover:bg-slate-900/50 transition-colors duration-200 group">
-                        <div class="flex flex-col items-center flex-shrink-0 hidden sm:flex">
-                            <div class="relative w-16 h-16 bg-emerald-600/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-shadow flex-shrink-0">
+                        <div class="flex flex-col items-center shrink-0 hidden sm:flex">
+                            <div class="relative w-16 h-16 bg-emerald-600/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-shadow shrink-0">
                                 <span class="text-2xl">🎯</span>
                                 <span class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 rounded-full text-white text-xs font-black flex items-center justify-center">3</span>
                             </div>
                             <!-- No connector: this is the last step -->
                         </div>
-                        <div class="relative flex-shrink-0 w-16 h-16 bg-emerald-600/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-shadow sm:hidden">
+                        <div class="relative shrink-0 w-16 h-16 bg-emerald-600/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-shadow sm:hidden">
                             <span class="text-2xl">🎯</span>
                             <span class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 rounded-full text-white text-xs font-black flex items-center justify-center">3</span>
                         </div>
@@ -235,10 +235,10 @@ import { Head } from '@inertiajs/vue3';
         <!-- ═══ CTA FINAL ═══ -->
         <section class="relative z-10 px-6 sm:px-10 lg:px-16 pb-28">
             <div class="max-w-3xl mx-auto">
-                <div class="relative p-10 sm:p-14 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-900/80 border border-slate-700/60 backdrop-blur-sm overflow-hidden shadow-2xl text-center">
+                <div class="relative p-10 sm:p-14 rounded-3xl bg-linear-to-br from-slate-900 to-slate-900/80 border border-slate-700/60 backdrop-blur-xs overflow-hidden shadow-2xl text-center">
                     <!-- Decorative glow -->
                     <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-15 pointer-events-none"></div>
-                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent"></div>
+                    <div class="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-blue-500/60 to-transparent"></div>
 
                     <div class="text-5xl mb-5">🏆</div>
                     <h2 class="text-3xl sm:text-4xl font-black text-white mb-4">¿Listo para tomar el control?</h2>

@@ -5,7 +5,7 @@ import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
-import { getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { getSymbol, getHPStats, cleanNum } from '@/composables/useDebtUtils';
 import { useMoney } from '@/composables/useMoney';
 const { number: formatMoney, currency, locale, money } = useMoney();
 const page = usePage();
@@ -14,7 +14,7 @@ const props = defineProps({
     debts:             Array,
     budget_currency: { type: String, default: null },
     ammunition:        { type: Number, default: 0 },
-    usd_exchange_rate: { type: Number, default: 59.50 },
+    usd_exchange_rate: { type: Number, default: null },
     fallen_bosses:     { type: Array,  default: () => [] },
 });
 
@@ -103,7 +103,7 @@ const focusRing = computed(() =>
         : 'focus:ring-orange-500 focus:border-orange-500'
 );
 
-// formatMoney, getSymbol, getHPStats, cleanNum, vMoney → imported from @/composables/useDebtUtils
+// formatMoney, getSymbol, getHPStats, cleanNum → imported from @/composables/useDebtUtils
 
 // ─── Dominican Banks & Credit Cards Catalogue (Cascading) ───────────────────
 const bancosYTarjetas = {
@@ -186,23 +186,10 @@ const payErrors = ref({});
 
 // ── Payment modal computed ────────────────────────────────────────────────────
 
-/**
- * DOP-equivalent cost of the typed amount, currency-aware.
- * USD debts are converted using the exchange rate prop before being
- * compared against the DOP-denominated capital libre (ammunition).
- */
-const dopCost = computed(() => {
-    const amount = cleanNum(paymentAmount.value);
-    if (!amount) return 0;
-    return selectedDebt.value?.currency === 'USD' && props.budget_currency === 'DOP'
-        ? amount * props.usd_exchange_rate
-        : amount;
-});
-
-/** True when the DOP cost of the attack exceeds available capital. */
+// Payments and budget availability are compared only in the same currency.
+const dopCost = computed(() => cleanNum(paymentAmount.value));
 const currencyMismatch = computed(() => selectedDebt.value && props.budget_currency
-    && selectedDebt.value.currency !== props.budget_currency
-    && !(selectedDebt.value.currency === 'USD' && props.budget_currency === 'DOP'));
+    && selectedDebt.value.currency !== props.budget_currency);
 const isOverAmmo = computed(() =>
     props.ammunition > 0 && dopCost.value > props.ammunition
 );
@@ -228,7 +215,7 @@ const closeDeleteModal = () => { showDeleteModal.value = false; selectedDebt.val
 const saveDebt = () => {
     if (isSubmitting.value) return;
     const cleanBalance = cleanNum(form.value.balance);
-    if (!form.value.name || cleanBalance <= 0) {
+    if (!form.value.name || !Number.isFinite(cleanBalance) || cleanBalance <= 0) {
         showNotification("Completa el nombre y un saldo válido.", "error");
         return;
     }
@@ -249,13 +236,19 @@ const saveDebt = () => {
         plazo_original_meses: form.value.type === 'loan' ? (parseInt(form.value.plazo_original_meses) || null) : null,
     };
 
+    if (['balance', 'interest_rate', 'minimum_payment', 'credit_limit', 'original_amount', 'overdraft_percentage'].some(key => payload[key] !== null && !Number.isFinite(payload[key]))) {
+        showNotification('Usa coma o punto decimal, sin separadores de miles ni más de dos decimales.', 'error');
+        return;
+    }
+
     isSubmitting.value = true;
-    router.post(route('debts.store'), payload, {
+    router.post(route('debts.store'), { ...payload, request_id: page.props.movementRequestId }, {
         preserveScroll: true,
         onSuccess: () => {
             form.value = { type: form.value.type, currency: form.value.currency, name: '', balance: '', interest_rate: '', minimum_payment: '', credit_limit: '', cutoff_date: '', payment_date: '', original_amount: '', overdraft_percentage: '', fecha_inicio: '', plazo_original_meses: '' };
             showNotification('¡Nuevo enemigo detectado en el radar!', 'success');
         },
+        onError: (errors) => showNotification(Object.values(errors)[0] ?? 'Revisa los datos.', 'error'),
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -268,6 +261,7 @@ const executeDelete = () => {
             showNotification('Enemigo aniquilado y borrado de los registros.', 'success');
             closeDeleteModal();
         },
+        onError: (errors) => showNotification(Object.values(errors)[0] ?? 'Revisa los datos.', 'error'),
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -282,7 +276,7 @@ const submitPayment = () => {
 
     isSubmitting.value = true;
     payErrors.value    = {}; // reset stale errors before each attempt
-    router.post(route('debts.pay', selectedDebt.value.id), { amount }, {
+    router.post(route('debts.pay', selectedDebt.value.id), { amount, request_id: page.props.movementRequestId }, {
         preserveScroll: true,
         onSuccess: () => {
             const debtId = selectedDebt.value.id;
@@ -296,7 +290,7 @@ const submitPayment = () => {
             setTimeout(() => { delete floatingDamages.value[debtId]; }, 1500);
             closePayModal();
         },
-        onError: (errors) => { payErrors.value = errors; },
+        onError: (errors) => { payErrors.value = errors; showNotification(Object.values(errors)[0] ?? 'Revisa los datos.', 'error'); },
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -360,7 +354,7 @@ const submitPayment = () => {
                                             type="text"
                                             v-model="form.name"
                                             :class="focusRing"
-                                            class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
+                                            class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 transition-all placeholder-slate-600 focus:outline-hidden focus:ring-2"
                                             placeholder="Ej. El Ogro del Banco"
                                         >
 
@@ -372,7 +366,7 @@ const submitPayment = () => {
                                                 <select
                                                     v-model="bancoSeleccionado"
                                                     :class="focusRing"
-                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-none focus:ring-2 appearance-none cursor-pointer"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-hidden focus:ring-2 appearance-none cursor-pointer"
                                                 >
                                                     <option value="" disabled class="text-slate-500">Selecciona el Banco 🏦</option>
                                                     <option
@@ -400,7 +394,7 @@ const submitPayment = () => {
                                                         v-model="form.name"
                                                         @change="onCardSelect(form.name)"
                                                         :class="focusRing"
-                                                        class="w-full bg-slate-950 border border-orange-900/60 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-none focus:ring-2 appearance-none cursor-pointer"
+                                                        class="w-full bg-slate-950 border border-orange-900/60 text-white rounded-lg px-3 py-2.5 pr-9 transition-all focus:outline-hidden focus:ring-2 appearance-none cursor-pointer"
                                                     >
                                                         <option value="" disabled class="text-slate-500">Selecciona la Tarjeta 💳</option>
                                                         <option
@@ -429,9 +423,9 @@ const submitPayment = () => {
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-slate-400 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.balance" v-money inputmode="decimal"
+                                            <input type="text" v-model="form.balance" inputmode="decimal"
                                                 :class="focusRing"
-                                                class="w-full bg-slate-950 border border-red-900/60 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono transition-all placeholder-slate-600 focus:outline-none focus:ring-2"
+                                                class="w-full bg-slate-950 border border-red-900/60 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono transition-all placeholder-slate-600 focus:outline-hidden focus:ring-2"
                                                 placeholder="0.00">
                                         </div>
                                     </div>
@@ -443,8 +437,8 @@ const submitPayment = () => {
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-blue-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.original_amount" v-money inputmode="decimal"
-                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
+                                            <input type="text" v-model="form.original_amount" inputmode="decimal"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
                                                 placeholder="0.00">
                                         </div>
                                     </div>
@@ -458,8 +452,8 @@ const submitPayment = () => {
                                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                         <span class="text-orange-500 font-bold text-sm">{{ getSymbol(form.currency) }}</span>
                                                     </div>
-                                                    <input type="text" v-model="form.credit_limit" v-money inputmode="decimal"
-                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                    <input type="text" v-model="form.credit_limit" inputmode="decimal"
+                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-12 pr-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                         placeholder="0.00">
                                                 </div>
                                             </div>
@@ -467,7 +461,7 @@ const submitPayment = () => {
                                                 <label class="block text-[10px] font-bold text-orange-400 mb-1.5 uppercase tracking-wider">% Sobregiro</label>
                                                 <div class="relative">
                                                     <input type="number" v-model="form.overdraft_percentage" inputmode="decimal"
-                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pr-7 pl-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                        class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pr-7 pl-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                         placeholder="10">
                                                     <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
                                                         <span class="text-orange-500 font-bold text-xs">%</span>
@@ -479,13 +473,13 @@ const submitPayment = () => {
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Corte</label>
                                                 <input type="number" v-model="form.cutoff_date" min="1" max="31" inputmode="numeric"
-                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                     placeholder="Ej: 15">
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Día de Pago</label>
                                                 <input type="number" v-model="form.payment_date" min="1" max="31" inputmode="numeric"
-                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder-slate-600"
                                                     placeholder="Ej: 5">
                                             </div>
                                         </div>
@@ -505,7 +499,7 @@ const submitPayment = () => {
                                             <div class="relative">
                                                 <input type="number" v-model="form.interest_rate" inputmode="decimal"
                                                     :class="focusRing"
-                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-3 pr-8 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
+                                                    class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-3 pr-8 py-2.5 font-mono focus:outline-hidden focus:ring-2 transition-all placeholder-slate-600"
                                                     placeholder="0">
                                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                                     <span class="text-slate-500 font-bold text-xs">%</span>
@@ -518,9 +512,9 @@ const submitPayment = () => {
                                             <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
                                                 {{ form.type === 'loan' ? '🗡️ Cuota Fija' : '🛡️ Pago Mínimo' }}
                                             </label>
-                                            <input type="text" v-model="form.minimum_payment" v-money inputmode="decimal"
+                                            <input type="text" v-model="form.minimum_payment" inputmode="decimal"
                                                 :class="focusRing"
-                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 transition-all placeholder-slate-600"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 transition-all placeholder-slate-600"
                                                 placeholder="0.00">
                                         </div>
                                     </div>
@@ -530,12 +524,12 @@ const submitPayment = () => {
                                         <div>
                                             <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">📅 Día de Despliegue</label>
                                             <input type="date" v-model="form.fecha_inicio"
-                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600 [color-scheme:dark]">
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600 scheme-dark">
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">🗓️ Duración (meses)</label>
                                             <input type="number" v-model="form.plazo_original_meses" min="1" max="600" inputmode="numeric"
-                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
+                                                class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-slate-600"
                                                 placeholder="Ej: 60">
                                         </div>
                                     </div>
@@ -634,7 +628,7 @@ const submitPayment = () => {
                         <!-- HUD: Municiones -->
                         <div v-if="ammunition > 0"
                             class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden sticky top-4 z-20 shadow-slate-900/50">
-                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+                            <div class="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-600 to-indigo-600"></div>
                             <div class="flex items-center gap-4 mb-3 sm:mb-0 relative z-10">
                                 <div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/50 text-2xl shadow-[0_0_15px_rgba(37,99,235,0.4)]">🔋</div>
                                 <div>
@@ -648,9 +642,9 @@ const submitPayment = () => {
                         </div>
 
                         <!-- LISTA DE JEFES -->
-                        <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
+                        <div class="bg-slate-900/80 backdrop-blur-xs overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
                             <!-- Ambient accent line -->
-                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-linear-to-r from-transparent via-red-500/50 to-transparent"></div>
 
                             <div v-if="debts && debts.length > 1" class="flex bg-slate-800/80 p-1 rounded-xl mb-6 border border-slate-700/50 w-fit">
                                     <button @click="strategy = 'avalanche'"
@@ -710,14 +704,14 @@ const submitPayment = () => {
                                 <div class="absolute -right-2 -top-2 text-4xl opacity-10 select-none pointer-events-none">💀</div>
 
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0">⚰️</div>
+                                    <div class="w-9 h-9 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-lg shrink-0">⚰️</div>
                                     <div class="min-w-0 flex-1">
                                         <p class="text-xs font-black text-slate-400 truncate">{{ boss.name }}</p>
                                         <p class="text-[10px] text-slate-600 mt-0.5">
                                             Derrotado el {{ new Date(boss.updated_at).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }) }}
                                         </p>
                                     </div>
-                                    <div class="flex-shrink-0 text-right">
+                                    <div class="shrink-0 text-right">
                                         <p class="text-xs font-black text-yellow-600/70">+{{ boss.experience_reward ?? 0 }} XP</p>
                                     </div>
                                 </div>
@@ -750,31 +744,14 @@ const submitPayment = () => {
                             <p class="text-4xl font-black text-red-500 mb-8 font-mono">{{ getSymbol(selectedDebt?.currency) }} {{ formatMoney(selectedDebt?.balance) }}</p>
 
                             <label class="block text-sm font-bold text-white mb-3 tracking-wide">¿Con cuánto poder vas a golpear?</label>
-                            <div class="relative rounded-xl shadow-sm">
+                            <div class="relative rounded-xl shadow-xs">
                                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                     <span class="text-slate-400 font-bold text-xl">{{ getSymbol(selectedDebt?.currency) }}</span>
                                 </div>
-                                <input type="text" v-model="paymentAmount" v-money autofocus inputmode="decimal"
+                                <input type="text" v-model="paymentAmount" autofocus inputmode="decimal"
                                     class="block w-full rounded-2xl border-slate-600 bg-slate-800 text-white pl-16 py-5 text-2xl font-mono focus:border-red-500 focus:ring-red-500 shadow-inner"
                                     placeholder="0.00">
                             </div>
-
-                            <!-- USD conversion hint —— shown only for USD debts with a typed amount -->
-                            <Transition
-                                enter-active-class="transition-all duration-300 ease-out"
-                                enter-from-class="opacity-0 -translate-y-1"
-                                enter-to-class="opacity-100 translate-y-0"
-                                leave-active-class="transition-all duration-200 ease-in"
-                                leave-from-class="opacity-100"
-                                leave-to-class="opacity-0"
-                            >
-                                <p v-if="selectedDebt?.currency === 'USD' && budget_currency === 'DOP' && cleanNum(paymentAmount) > 0"
-                                    class="mt-3 text-sm text-blue-400 font-medium leading-relaxed">
-                                    Equivalente a <strong class="font-mono text-blue-300">RD$ {{ formatMoney(dopCost) }}</strong>.
-                                    Tasa de referencia ({{ usd_exchange_rate }}).
-                                    <span class="text-slate-500">Puede variar en cualquier momento.</span>
-                                </p>
-                            </Transition>
 
                             <!-- Over-ammo warning —— shown when typed amount exceeds capital libre -->
                             <Transition
@@ -811,14 +788,14 @@ const submitPayment = () => {
                         <button @click="submitPayment"
                             :disabled="isSubmitting || isOverAmmo || currencyMismatch"
                             :class="{
-                                'opacity-70 cursor-wait !pointer-events-none': isSubmitting,
-                                'opacity-50 cursor-not-allowed !pointer-events-none': isOverAmmo && !isSubmitting,
+                                'opacity-70 cursor-wait pointer-events-none!': isSubmitting,
+                                'opacity-50 cursor-not-allowed pointer-events-none!': isOverAmmo && !isSubmitting,
                             }"
                             class="w-full sm:w-auto sm:ml-3 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-0.5 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
                             💥 Lanzar Ataque
                         </button>
                         <button @click="closePayModal"
-                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-sm px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-xs px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
                             Retirada
                         </button>
                     </div>
@@ -834,7 +811,7 @@ const submitPayment = () => {
                 <div class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
                     <div class="bg-slate-900 px-6 pt-8 pb-6">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-red-500/20 border border-red-500/50 sm:mx-0 sm:h-12 sm:w-12">
+                            <div class="mx-auto shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-red-500/20 border border-red-500/50 sm:mx-0 sm:h-12 sm:w-12">
                                 ⚠️
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
@@ -853,7 +830,7 @@ const submitPayment = () => {
                             Eliminar del Radar
                         </button>
                         <button @click="closeDeleteModal" type="button"
-                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-sm px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-600 shadow-xs px-6 py-3 bg-transparent text-sm font-bold text-slate-300 hover:bg-slate-700 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
                             Cancelar
                         </button>
                     </div>

@@ -9,6 +9,7 @@ import { Head } from '@inertiajs/vue3';
 defineProps({
     mustVerifyEmail: { type: Boolean },
     status:          { type: String  },
+    hasPassword: { type: Boolean, default: true },
 });
 </script>
 
@@ -34,7 +35,7 @@ defineProps({
 
                 <UpdatePasswordForm />
 
-                <DeleteUserForm />
+                <DeleteUserForm :has-password="hasPassword" />
 
             </div>
         </div>

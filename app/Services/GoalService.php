@@ -15,10 +15,17 @@ class GoalService
      */
     public function addFunds(Goal $goal, float $amount): bool
     {
-        $goal->increment('current_amount', $amount);
-        $goal->refresh();
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($goal, $amount) {
+            $locked = Goal::whereKey($goal->id)->lockForUpdate()->firstOrFail();
+            $cents = round((float) $locked->current_amount * 100) + round($amount * 100);
+            if ($cents > 9999999999) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['amount' => 'El importe acumulado supera el límite permitido.']);
+            }
+            $locked->update(['current_amount' => $cents / 100]);
+            $goal->refresh();
 
-        return $this->isCompleted($goal);
+            return $this->isCompleted($goal);
+        }, 3);
     }
 
     /**

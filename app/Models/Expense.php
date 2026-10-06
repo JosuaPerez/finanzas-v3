@@ -16,7 +16,15 @@ class Expense extends Model
         'currency',
         'amount',
         'description',
+        'budget_id',
+        'budget_deducted',
+        'request_id',
     ];
+
+    protected function casts(): array
+    {
+        return ['budget_deducted' => 'boolean'];
+    }
 
     /**
      * Serialize dates to strict ISO 8601 format (YYYY-MM-DDTHH:MM:SS).

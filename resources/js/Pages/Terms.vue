@@ -14,7 +14,7 @@ import { Head, Link } from '@inertiajs/vue3';
         </div>
 
         <!-- Header / Navigation bar -->
-        <header class="relative z-10 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0">
+        <header class="relative z-10 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xs sticky top-0">
             <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="text-2xl">⚔️</span>
@@ -42,7 +42,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <p class="mt-3 text-slate-400 text-sm font-medium">
                     Última actualización: Junio 2025 · Vigente desde la fecha de registro
                 </p>
-                <div class="mt-4 mx-auto w-16 h-1 rounded-full bg-gradient-to-r from-blue-500 to-red-500"></div>
+                <div class="mt-4 mx-auto w-16 h-1 rounded-full bg-linear-to-r from-blue-500 to-red-500"></div>
             </div>
 
             <!-- Intro card -->
@@ -60,7 +60,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 1 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">1</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">1</span>
                         <h2 class="text-base font-bold text-white">Naturaleza del Servicio</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed space-y-3">
@@ -82,7 +82,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 2 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">2</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">2</span>
                         <h2 class="text-base font-bold text-white">Registro y Responsabilidad de la Cuenta</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed space-y-3">
@@ -104,7 +104,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 3 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">3</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">3</span>
                         <h2 class="text-base font-bold text-white">Privacidad y Tratamiento de Datos</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed space-y-3">
@@ -128,7 +128,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 4 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">4</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">4</span>
                         <h2 class="text-base font-bold text-white">Usos Prohibidos</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed">
@@ -164,7 +164,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 5 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">5</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">5</span>
                         <h2 class="text-base font-bold text-white">Limitación de Responsabilidad</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed space-y-3">
@@ -183,7 +183,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 6 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">6</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">6</span>
                         <h2 class="text-base font-bold text-white">Modificaciones a los Términos</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed space-y-3">
@@ -201,7 +201,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 <!-- 7 -->
                 <section class="rounded-2xl border border-slate-700/60 bg-slate-800/50 overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-700/60 bg-slate-800">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">7</span>
+                        <span class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">7</span>
                         <h2 class="text-base font-bold text-white">Legislación Aplicable</h2>
                     </div>
                     <div class="px-6 py-5 text-sm text-slate-400 leading-relaxed">
