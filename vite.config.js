@@ -22,8 +22,18 @@ export default defineConfig({
             
             // CORRECCIÓN 1: El soldado debe vigilar desde la entrada principal
             outDir: 'public',
-            buildBase: '/build/',
+            base: '/',
+            scope: '/',
+            buildBase: '/',
             injectRegister: null,
+            integration: {
+                beforeBuildServiceWorker(options) {
+                    // The manifest is emitted inside Laravel's build directory.
+                    options.workbox.additionalManifestEntries = options.workbox.additionalManifestEntries
+                        .map((entry) => entry.url === 'manifest.webmanifest'
+                            ? { ...entry, url: '/build/manifest.webmanifest' } : entry);
+                },
+            },
 
             manifest: {
                 name:             'FinanzasRPG',
@@ -56,6 +66,8 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,woff,woff2}'],
                 // Ajustamos la ruta para que busque dentro del build de Laravel
                 globDirectory: 'public/build',
+                modifyURLPrefix: { '': '/build/' },
+                navigateFallback: null,
                 cleanupOutdatedCaches: true,
 
                 runtimeCaching: [

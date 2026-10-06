@@ -5,8 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
         <meta name="theme-color" content="#111827">
-        <link rel="apple-touch-icon" href="/icon-192x192.png">
-        <link rel="manifest" href="/manifest.webmanifest">
+        <link rel="apple-touch-icon" href="/pwa-192x192.png">
+        <link rel="manifest" href="/build/manifest.webmanifest">
         
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

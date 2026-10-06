@@ -48,7 +48,7 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate
       - run: npm ci
       - run: npm run build
-      - run: node --test tests/Frontend/*.test.mjs
+      - run: node --test tests/Frontend/*.test.mjs tests/Deployment/*.test.mjs
       - run: php artisan test
       - run: composer audit
       - run: npm audit --omit=dev

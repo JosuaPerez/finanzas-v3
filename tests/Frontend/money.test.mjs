@@ -43,3 +43,17 @@ test("regional formatting preserves record currency and fractional amounts", () 
     assert.match(spain, /1234,56|1\.234,56/);
     assert.match(formatCurrency(25.5, "CLP", "es-CL"), /25,50/);
 });
+
+test('missing or malformed record currencies never crash or relabel an amount', () => {
+    for (const currency of [null, '', 'null', 'MX', 123, {}]) {
+        const formatted = formatCurrency(123.45, currency, 'es-MX');
+        assert.match(formatted, /123\.45/);
+        assert.match(formatted, /moneda sin definir/);
+        assert.doesNotMatch(formatted, /DOP|MXN|USD/);
+    }
+    assert.match(formatCurrency(123.45, 'mxn', null), /MXN/);
+    assert.match(formatCurrency(123.45, 'EUR', 'invalid_locale'), /EUR/);
+    assert.equal(formatCurrency(null, 'MXN'), 'Importe sin definir');
+    assert.equal(formatCurrency('bad', 'MXN'), 'Importe sin definir');
+    assert.match(formatCurrency(0, 'MXN'), /0\.00/);
+});

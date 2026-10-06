@@ -14,8 +14,15 @@ if [ -z "${APP_KEY:-}" ]; then
     exit 1
 fi
 
+# Runtime settings can override Docker defaults; never expose debug pages here.
+export APP_ENV=production
+export APP_DEBUG=false
+
 sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
 sed -i "s/:80>/:$PORT>/" /etc/apache2/sites-available/000-default.conf
+php artisan config:clear
+# Apply only pending migrations before accepting traffic. A failure stops startup.
+php artisan migrate --force
 php artisan config:cache
 php artisan view:cache
 exec apache2-foreground
