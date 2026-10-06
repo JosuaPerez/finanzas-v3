@@ -19,7 +19,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function version(Request $request): ?string
     {
-        return parent::version($request);
+        return $request->is('api/mobile/v1/*') ? null : parent::version($request);
     }
 
     /**
@@ -31,6 +31,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'nativeRuntime' => (bool) config('nativephp-internal.running', false),
+            'movementRequestId' => fn () => (string) \Illuminate\Support\Str::uuid(),
             'auth' => [
                 'user' => $request->user(),
                 // Streak data — available as usePage().props.auth.current_streak

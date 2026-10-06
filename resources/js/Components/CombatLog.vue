@@ -67,7 +67,7 @@ const messageParts = computed(() => {
         >
             <div
                 v-if="show"
-                class="fixed bottom-6 right-6 z-[9999] max-w-sm w-full pointer-events-none"
+                class="fixed bottom-6 right-6 z-9999 max-w-sm w-full pointer-events-none"
             >
                 <div
                     class="relative overflow-hidden rounded-2xl px-5 py-4 backdrop-blur-md border shadow-2xl flex items-start gap-4 transition-all"
@@ -83,12 +83,12 @@ const messageParts = computed(() => {
                     <!-- Ambient glow bar at top -->
                     <div
                         class="absolute top-0 left-0 right-0 h-[2px]"
-                        :class="type === 'success' ? 'bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-600' : 'bg-gradient-to-r from-red-600 via-red-400 to-red-600'"
+                        :class="type === 'success' ? 'bg-linear-to-r from-emerald-600 via-teal-400 to-emerald-600' : 'bg-linear-to-r from-red-600 via-red-400 to-red-600'"
                     ></div>
 
                     <!-- Icon -->
                     <div
-                        class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-base border"
+                        class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-base border"
                         :class="
                             type === 'success'
                                 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'

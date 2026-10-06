@@ -31,7 +31,7 @@ const updatePassword = () => {
 </script>
 
 <template>
-    <section class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 sm:p-8">
+    <section class="bg-slate-900/80 backdrop-blur-xs border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 sm:p-8">
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
                 🔐 Credenciales de Seguridad
@@ -54,7 +54,7 @@ const updatePassword = () => {
                     v-model="form.current_password"
                     type="password"
                     autocomplete="current-password"
-                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
                     placeholder="••••••••"
                 />
                 <InputError :message="form.errors.current_password" class="mt-2" />
@@ -71,7 +71,7 @@ const updatePassword = () => {
                     v-model="form.password"
                     type="password"
                     autocomplete="new-password"
-                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
                     placeholder="••••••••"
                 />
                 <InputError :message="form.errors.password" class="mt-2" />
@@ -87,7 +87,7 @@ const updatePassword = () => {
                     v-model="form.password_confirmation"
                     type="password"
                     autocomplete="new-password"
-                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
                     placeholder="••••••••"
                 />
                 <InputError :message="form.errors.password_confirmation" class="mt-2" />

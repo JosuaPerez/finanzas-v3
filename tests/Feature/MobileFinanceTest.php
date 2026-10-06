@@ -77,14 +77,14 @@ it('uses the configured recurring payment day and clamps it to the actual month 
     $this->travelBack();
 });
 
-it('stores an expense once in its selected currency without changing budget or debt balances', function () {
+it('stores an expense and deducts its amount from the same-currency budget without changing debt balances', function () {
     $user = User::factory()->create(['preferred_currency' => 'MXN']);
-    $budget = Budget::create(['user_id' => $user->id, 'title' => 'Plan', 'income' => 100, 'details' => json_encode(['remaining' => 100])]);
+    $budget = Budget::create(['user_id' => $user->id, 'title' => 'Plan', 'currency' => 'MXN', 'income' => 100, 'details' => json_encode(['remaining' => 100])]);
     $debt = Debt::create(['user_id' => $user->id, 'name' => 'Deuda', 'balance' => 100]);
     $this->actingAs($user)->post(route('quick-attack.store'), ['monto' => 25.50, 'descripcion' => 'Transporte', 'currency' => 'MXN'])->assertSessionHasNoErrors();
     $this->assertDatabaseHas('expenses', ['user_id' => $user->id, 'amount' => 25.50, 'currency' => 'MXN']);
     expect(Expense::count())->toBe(1)->and((float) $debt->fresh()->balance)->toBe(100.0)
-        ->and(json_decode($budget->fresh()->details, true)['remaining'])->toBe(100)
+        ->and(json_decode($budget->fresh()->details, true)['remaining'])->toBe(74.5)
         ->and($user->fresh()->current_xp)->toBe(15);
     $this->post(route('quick-attack.store'), ['monto' => -1, 'descripcion' => '', 'currency' => 'XYZ'])->assertInvalid(['monto', 'descripcion', 'currency']);
     expect(Expense::count())->toBe(1);
@@ -94,9 +94,9 @@ it('creates new budgets, debts and goals in a supported currency without convert
     $user = User::factory()->create(['preferred_currency' => 'EUR']);
     $this->actingAs($user)->post(route('budgets.store'), [
         'title' => 'Nuevo', 'income' => 1000, 'fixed_expenses_total' => 200, 'details' => ['remaining' => 800],
-    ])->assertSessionHasNoErrors();
-    $this->post(route('debts.store'), ['name' => 'Deuda', 'currency' => 'EUR', 'balance' => 500, 'interest_rate' => 0, 'minimum_payment' => 50, 'type' => 'loan'])->assertSessionHasNoErrors();
-    $this->post(route('metas.store'), ['name' => 'Fondo', 'currency' => 'EUR', 'target_amount' => 1000])->assertSessionHasNoErrors();
+    ])->assertRedirect(route('dashboard'))->assertSessionHasNoErrors();
+    $this->post(route('debts.store'), ['name' => 'Deuda', 'currency' => 'EUR', 'balance' => 500, 'interest_rate' => 0, 'minimum_payment' => 50, 'type' => 'loan'])->assertRedirect(route('deudas'))->assertSessionHasNoErrors();
+    $this->post(route('metas.store'), ['name' => 'Fondo', 'currency' => 'EUR', 'target_amount' => 1000])->assertRedirect()->assertSessionHasNoErrors();
     expect(Budget::first()->currency)->toBe('EUR')->and(Debt::first()->currency)->toBe('EUR')->and(Goal::first()->currency)->toBe('EUR');
 });
 
@@ -125,23 +125,13 @@ it('rejects unsupported cross-currency payments and payments on another users de
     expect((float) $debt->fresh()->balance)->toBe(100.0)->and((float) $foreign->fresh()->balance)->toBe(100.0)->and(Expense::count())->toBe(0);
 });
 
-it('deducts the actual DOP cost for the existing USD conversion and stores both currencies on the receipt', function () {
-    $this->mock(BpdExchangeRateService::class)->shouldReceive('getUsdSellRate')->once()->andReturn(60.50);
+it('rejects the legacy USD DOP conversion instead of deducting a guessed rate', function () {
+    $this->mock(BpdExchangeRateService::class)->shouldNotReceive('getUsdSellRate');
     $user = User::factory()->create();
     $budget = Budget::create(['user_id' => $user->id, 'title' => 'Plan DOP', 'currency' => 'DOP', 'income' => 10000, 'details' => json_encode(['remaining' => 10000])]);
     $debt = Debt::create(['user_id' => $user->id, 'name' => 'Deuda USD', 'currency' => 'USD', 'balance' => 500]);
-    $this->actingAs($user)->post(route('debts.pay', $debt), ['amount' => 100])->assertSessionHasNoErrors();
-    $details = $budget->fresh()->details;
-    if (is_string($details)) $details = json_decode($details, true);
-    expect((float) $details['remaining'])->toBe(3950.0)
-        ->and((float) $details['debt_payments'][0]['amount'])->toBe(100.0)
-        ->and($details['debt_payments'][0]['currency'])->toBe('USD')
-        ->and((float) $details['debt_payments'][0]['budget_amount'])->toBe(6050.0)
-        ->and((float) $debt->fresh()->balance)->toBe(400.0);
-    $export = new \App\Exports\BudgetExport($budget->fresh());
-    $paymentRow = collect($export->array())->first(fn ($row) => $row[0] === '⚔️ Ataque a Deuda');
-    expect($export->headings()[2])->toBe('Monto (DOP)')
-        ->and((float) $paymentRow[2])->toBe(6050.0);
+    $this->actingAs($user)->post(route('debts.pay', $debt), ['amount' => 100])->assertInvalid(['amount']);
+    expect((float) $debt->fresh()->balance)->toBe(500.0)->and(json_decode($budget->fresh()->details, true)['remaining'])->toBe(10000);
 });
 
 it('backfills legacy currencies without losing existing balances during migration', function () {

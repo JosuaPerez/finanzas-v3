@@ -37,15 +37,7 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => [
-                'required', 
-                'confirmed', 
-                Rules\Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-            ],
+            'password' => \App\Support\PasswordPolicy::rules(),
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we
@@ -59,6 +51,8 @@ class NewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                $user->tokens()->delete();
+                \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $user->id)->delete();
                 event(new PasswordReset($user));
             }
         );
@@ -71,7 +65,7 @@ class NewPasswordController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => [trans($status)],
+            'email' => [trans('passwords.token')],
         ]);
     }
 }

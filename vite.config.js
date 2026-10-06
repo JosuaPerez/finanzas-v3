@@ -59,19 +59,7 @@ export default defineConfig({
                 cleanupOutdatedCaches: true,
 
                 runtimeCaching: [
-                    // CORRECCIÓN 2: El Escudo Anti-Pantalla Blanca (NetworkFirst para HTML)
-                    {
-                        urlPattern: ({ request }) => request.mode === 'navigate',
-                        handler: 'NetworkFirst',
-                        options: {
-                            cacheName: 'html-cache',
-                            networkTimeoutSeconds: 3, // Si Render tarda más de 3s, carga la interfaz offline
-                            expiration: {
-                                maxEntries: 10,
-                                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 semana
-                            },
-                        },
-                    },
+                    // Private pages always require a live server response.
                     {
                         urlPattern: /^https?:\/\/.*\/build\/.*/i,
                         handler:    'CacheFirst',

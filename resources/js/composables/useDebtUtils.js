@@ -16,7 +16,7 @@
  * @param {number|string} amount
  * @returns {string}
  */
-import { formatNumber } from '@/utils';
+import { formatNumber, parseAmount } from '../utils.js';
 export const formatMoney = formatNumber;
 
 /**
@@ -28,7 +28,7 @@ export const formatMoney = formatNumber;
 export const getSymbol = (currency) => currency || 'DOP';
 
 /**
- * Parse a formatted money string (e.g. "1,234.56") into a plain float.
+ * Parse decimal input with comma or point; reject grouping and ambiguous amounts.
  * Returns 0 for null/undefined/empty.
  *
  * @param {string|number|null|undefined} val
@@ -36,7 +36,7 @@ export const getSymbol = (currency) => currency || 'DOP';
  */
 export const cleanNum = (val) => {
     if (val === null || val === undefined || val === '') return 0;
-    return parseFloat(String(val).replace(/,/g, '')) || 0;
+    return parseAmount(val, { allowZero: true }) ?? NaN;
 };
 
 /**
@@ -80,37 +80,4 @@ export const getHPStats = (debt) => {
         percent: Math.min(100, percent),
         isCritical: percent > 80,
     };
-};
-
-/**
- * Vue custom directive: live currency formatting for <input> elements.
- * Formats input as comma-separated thousands while the user types.
- * Attach with v-money on any text input bound to a numeric model.
- *
- * Usage: const { vMoney } = useMoneyDirective()
- */
-export const vMoney = {
-    mounted: (el) => {
-        el.addEventListener('input', (e) => {
-            // Skip programmatic events to avoid infinite loops
-            if (!e.isTrusted) return;
-
-            let cursorPosition = el.selectionStart;
-            const oldLength = el.value.length;
-
-            // Strip everything except digits and the decimal point
-            let val = el.value.replace(/[^\d.]/g, '');
-            const parts = val.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const formatted = parts.join('.');
-
-            if (el.value !== formatted) {
-                el.value = formatted;
-                // Nudge cursor so it doesn't jump to end when a comma appears
-                cursorPosition += formatted.length - oldLength;
-                el.setSelectionRange(cursorPosition, cursorPosition);
-                el.dispatchEvent(new Event('input'));
-            }
-        });
-    },
 };

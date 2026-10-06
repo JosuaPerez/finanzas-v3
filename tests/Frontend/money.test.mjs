@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { formatCurrency, parseAmount } from "../../resources/js/utils.js";
+import { cleanNum } from "../../resources/js/composables/useDebtUtils.js";
 
 test("decimal keyboards accept comma and point without interpreting thousands as decimals", () => {
     assert.equal(parseAmount("25,50"), 25.5);
@@ -19,6 +20,17 @@ test("decimal keyboards accept comma and point without interpreting thousands as
         ".5",
     ]) {
         assert.equal(parseAmount(invalid), null, invalid);
+    }
+});
+
+test('budget goal and debt inputs preserve decimal commas and reject ambiguous or malformed amounts', () => {
+    assert.equal(cleanNum('25,50'), 25.5);
+    assert.equal(cleanNum('25.50'), 25.5);
+    assert.equal(cleanNum('0'), 0);
+    assert.equal(cleanNum(''), 0);
+    assert.equal(cleanNum(1000), 1000);
+    for (const invalid of ['1,234', '1.234,56', 'abc', '-1', '12e3', '0.001']) {
+        assert.ok(Number.isNaN(cleanNum(invalid)), invalid);
     }
 });
 

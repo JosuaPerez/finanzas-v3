@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Debt;
 use App\Models\Budget;
+use Illuminate\Support\Facades\DB;
 
 class DebtService
 {
@@ -18,36 +19,53 @@ class DebtService
      */
     public function applyPayment(Debt $debt, float $amount, ?float $budgetCost = null): bool
     {
-        // 1. Deduct from the debt balance, floor at 0
-        $debt->balance = max(0, $debt->balance - $amount);
-        $debt->save();
+        return DB::transaction(function () use ($debt, $amount, $budgetCost) {
+            \App\Models\User::whereKey($debt->user_id)->lockForUpdate()->firstOrFail();
+            $locked = Debt::whereKey($debt->id)->lockForUpdate()->firstOrFail();
+            $debt->setRawAttributes($locked->getAttributes(), true);
+            if ($budgetCost !== null && $amount > (float) $debt->balance) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['amount' => 'El pago supera el saldo pendiente de la deuda.']);
+            }
+            // 1. Deduct from the debt balance, floor at 0
+            $debt->balance = max(0, $debt->balance - $amount);
+            $debt->save();
 
-        // 2. Reflect payment against the active budget's remaining capital
-        $budget = Budget::where('user_id', $debt->user_id)->latest('id')->first();
+            // 2. Reflect payment against the active budget's remaining capital
+            $budget = Budget::where('user_id', $debt->user_id)->latest('id')->lockForUpdate()->first();
 
-        if ($budget && ($budget->currency === $debt->currency || $budgetCost !== null)) {
-            $details = is_string($budget->details)
-                ? json_decode($budget->details, true)
-                : (array) $budget->details;
+            if ($budget && ($budget->currency === $debt->currency || $budgetCost !== null)) {
+                $details = is_string($budget->details)
+                    ? json_decode($budget->details, true)
+                    : (array) $budget->details;
 
-            // Deduct from free capital
-            $details['remaining'] = max(0, ($details['remaining'] ?? 0) - ($budgetCost ?? $amount));
+                if (($details['remaining'] ?? 0) < 0) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'municion' => 'Tu presupuesto tiene un disponible negativo. Revísalo antes de registrar un pago.',
+                    ]);
+                }
+                if (($details['remaining'] ?? 0) > 0 && ($budgetCost ?? $amount) > $details['remaining']) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['municion' => 'El disponible del presupuesto cambió. Revisa el importe del pago.']);
+                }
 
-            // Append payment receipt
-            $details['debt_payments'][] = [
-                'name'   => $debt->name,
-                'amount' => $amount,
-                'currency' => $debt->currency,
-                'budget_amount' => $budgetCost ?? $amount,
-                'budget_currency' => $budget->currency,
-                'paid_at' => now()->toIso8601String(),
-            ];
+                // Deduct from free capital
+                $details['remaining'] = round(($details['remaining'] ?? 0) - ($budgetCost ?? $amount), 2);
 
-            $budget->details = $details;
-            $budget->save();
-        }
+                // Append payment receipt
+                $details['debt_payments'][] = [
+                    'name'   => $debt->name,
+                    'amount' => $amount,
+                    'currency' => $debt->currency,
+                    'budget_amount' => $budgetCost ?? $amount,
+                    'budget_currency' => $budget->currency,
+                    'paid_at' => now()->toIso8601String(),
+                ];
 
-        return $debt->balance <= 0;
+                $budget->details = $details;
+                $budget->save();
+            }
+
+            return $debt->balance <= 0;
+        }, 3);
     }
 
     /**

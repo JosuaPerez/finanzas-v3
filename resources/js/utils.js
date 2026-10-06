@@ -11,11 +11,11 @@ export const formatCurrency = (value, currency = "DOP", locale = "es-DO") => {
 };
 
 // Mobile keyboards may use a comma or a point. Group separators are not accepted.
-export const parseAmount = (value) => {
+export const parseAmount = (value, { allowZero = false } = {}) => {
     const text = String(value ?? "").trim();
     if (!/^\d+(?:[.,]\d{1,2})?$/.test(text)) return null;
     const amount = Number(text.replace(",", "."));
-    return Number.isFinite(amount) && amount > 0 ? amount : null;
+    return Number.isFinite(amount) && (amount > 0 || (allowZero && amount === 0)) ? amount : null;
 };
 
 export const formatNumber = (value, locale = "es-DO") =>

@@ -7,9 +7,13 @@ use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\StringValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSize
+class BudgetExport extends StringValueBinder implements FromArray, WithHeadings, WithStyles, ShouldAutoSize, WithCustomValueBinder
 {
     protected $budget;
 
@@ -41,6 +45,10 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
             $rows[] = ['', '', ''];
         }
 
+        foreach ($details['expenses'] ?? [] as $expense) {
+            $rows[] = ['Gasto registrado', $expense['description'] . ($expense['deducted'] ? '' : ' (ya incluido en gastos fijos)'), $expense['deducted'] ? $expense['amount'] : 0];
+        }
+
         // 4. Resumen Final
         $rows[] = ['⚖️ RESUMEN', 'Capital Libre Restante', $details['remaining'] ?? 0];
 
@@ -50,6 +58,14 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
     public function headings(): array
     {
         return ['Categoría', 'Concepto', 'Monto (' . $this->budget->currency . ')'];
+    }
+
+    public function bindValue(Cell $cell, $value): bool
+    {
+        // User-controlled descriptions must never become spreadsheet formulas.
+        $cell->setValueExplicit($value, is_int($value) || is_float($value) ? DataType::TYPE_NUMERIC : DataType::TYPE_STRING);
+
+        return true;
     }
 
     public function styles(Worksheet $sheet)

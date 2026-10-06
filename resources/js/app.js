@@ -16,6 +16,15 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
+        // NativePHP serves bundled assets and manages its own updates.
+        if (import.meta.env.PROD && !props.initialPage.props.nativeRuntime) {
+            // Remove pages stored by the previous navigation caching policy.
+            window.caches?.delete('html-cache').catch(() => {});
+            import('virtual:pwa-register').then(({ registerSW }) => {
+                registerSW({ immediate: true });
+            });
+        }
+
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
@@ -28,12 +37,3 @@ createInertiaApp({
         delay: 0,
     },
 });
-
-// ── PWA Service Worker registration ───────────────────────────────────────────
-// Only active in production builds (devOptions.enabled: false in vite.config.js).
-// registerType: 'autoUpdate' — no user prompt, the SW refreshes silently.
-if (import.meta.env.PROD) {
-    import('virtual:pwa-register').then(({ registerSW }) => {
-        registerSW({ immediate: true });
-    });
-}

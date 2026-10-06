@@ -16,7 +16,7 @@ const form = useForm({
 </script>
 
 <template>
-    <section class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 sm:p-8">
+    <section class="bg-slate-900/80 backdrop-blur-xs border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 sm:p-8">
         <!-- Section header -->
         <header class="mb-6">
             <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
@@ -41,7 +41,7 @@ const form = useForm({
                     required
                     autofocus
                     autocomplete="name"
-                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
                     placeholder="Tu nombre de comandante"
                 />
                 <InputError class="mt-2" :message="form.errors.name" />
@@ -58,7 +58,7 @@ const form = useForm({
                     v-model="form.email"
                     required
                     autocomplete="username"
-                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+                    class="block w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-600 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 transition-colors"
                     placeholder="correo@ejemplo.com"
                 />
                 <InputError class="mt-2" :message="form.errors.email" />

@@ -15,6 +15,7 @@ use App\Traits\SurvivalMechanics;
 
 class User extends Authenticatable
 {
+    use \Laravel\Sanctum\HasApiTokens;
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SurvivalMechanics;
 
@@ -179,4 +180,3 @@ class User extends Authenticatable
         return $this->belongsToMany(Achievement::class)->withPivot('unlocked_at');
     }
 }
-

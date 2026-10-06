@@ -97,10 +97,10 @@ const downloadExcel = (id) => {
                 />
 
                 <!-- Main panel — unified dark glassmorphism -->
-                <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
+                <div class="bg-slate-900/80 backdrop-blur-xs overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-slate-700/60 ring-1 ring-white/5 relative">
 
                     <!-- Ambient accent line -->
-                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-linear-to-r from-transparent via-amber-500/50 to-transparent"></div>
 
                     <!-- record count badge -->
                     <div v-if="budgets && budgets.length > 0" class="mb-6 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-lg w-fit">
@@ -112,11 +112,11 @@ const downloadExcel = (id) => {
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                         <div v-for="budget in budgets" :key="budget.id"
-                            class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col group">
+                            class="bg-slate-900/80 backdrop-blur-xs border border-slate-700/60 ring-1 ring-white/5 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col group">
 
                             <!-- Card header -->
                             <div class="bg-slate-950/50 border-b border-slate-800/80 p-5 relative overflow-hidden">
-                                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
+                                <div class="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-amber-500/30 to-transparent"></div>
                                 <h3 class="font-black text-base text-white mb-1 truncate">📄 {{ budget.title }}</h3>
                                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">
                                     Guardado: {{ new Date(budget.created_at).toLocaleDateString(locale) }}
@@ -124,7 +124,7 @@ const downloadExcel = (id) => {
                             </div>
 
                             <!-- Card body -->
-                            <div class="p-5 flex-grow space-y-3">
+                            <div class="p-5 grow space-y-3">
                                 <div class="flex justify-between items-center pb-3 border-b border-slate-800/60">
                                     <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Ingreso Quincenal</span>
                                     <span class="text-white font-black font-mono text-sm">{{ money(budget.income, budget.currency) }}</span>
@@ -179,10 +179,10 @@ const downloadExcel = (id) => {
             <div v-if="defeated_bosses.length > 0" class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
 
                 <!-- Section panel -->
-                <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-emerald-900/40 ring-1 ring-white/5 relative">
+                <div class="bg-slate-900/80 backdrop-blur-xs overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 border border-emerald-900/40 ring-1 ring-white/5 relative">
 
                     <!-- Victory accent line (emerald instead of amber) -->
-                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-linear-to-r from-transparent via-emerald-500/50 to-transparent"></div>
 
                     <!-- Section header -->
                     <div class="flex items-start justify-between mb-6">
@@ -289,6 +289,15 @@ const downloadExcel = (id) => {
                             </ul>
                         </div>
 
+                        <div v-if="selectedBudget.parsedDetails.expenses?.length">
+                            <h4 class="mb-3 mt-5 text-sm font-bold text-slate-300">Gastos registrados</h4>
+                            <ul class="space-y-2">
+                                <li v-for="expense in selectedBudget.parsedDetails.expenses" :key="expense.id" class="rounded-xl bg-slate-800 p-3 text-sm">
+                                    <div class="flex justify-between gap-3"><span>{{ expense.description }}</span><span>{{ money(expense.amount, expense.currency) }}</span></div>
+                                    <p class="mt-1 text-xs text-slate-400">{{ expense.deducted ? 'Descontado del disponible' : 'Ya incluido en gastos fijos; sin otro descuento' }}</p>
+                                </li>
+                            </ul>
+                        </div>
                         <!-- Capital libre -->
                         <div class="mt-6 p-5 bg-blue-900/20 rounded-2xl flex justify-between items-center border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
                             <span class="font-black text-blue-400 uppercase text-xs tracking-wider">💰 Capital Libre Restante:</span>

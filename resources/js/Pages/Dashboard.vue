@@ -100,7 +100,7 @@ const claimQuest = () => {
                     </h2>
                     <p
                         v-if="available?.amount != null"
-                        class="mt-4 break-words text-3xl font-semibold tabular-nums tracking-tight"
+                        class="mt-4 wrap-break-word text-3xl font-semibold tabular-nums tracking-tight"
                         :class="
                             available.amount < 0 ? 'text-red-300' : 'text-white'
                         "
@@ -120,8 +120,9 @@ const claimQuest = () => {
                     </p>
                     <p class="mt-4 text-sm leading-relaxed text-slate-400">
                         Es una estimación de tu presupuesto, no tu saldo
-                        bancario. Los gastos rápidos se guardan en el historial
-                        y no descuentan esta cifra.
+                        bancario. Los nuevos gastos descuentan el disponible;
+                        marca los que ya estaban incluidos en gastos fijos para
+                        evitar descontarlos dos veces.
                     </p>
                     <Link :href="route('presupuesto')" class="finance-link mt-3"
                         >{{
@@ -142,7 +143,7 @@ const claimQuest = () => {
                         <p class="mt-4 text-xl font-semibold text-white">
                             {{ date(nextPayment.date) }}
                         </p>
-                        <p class="mt-2 break-words text-sm text-slate-300">
+                        <p class="mt-2 wrap-break-word text-sm text-slate-300">
                             {{ nextPayment.name }}
                         </p>
                         <p
@@ -192,7 +193,7 @@ const claimQuest = () => {
                     </h2>
                     <template v-if="featuredGoal">
                         <p
-                            class="mt-4 break-words text-xl font-semibold text-white"
+                            class="mt-4 wrap-break-word text-xl font-semibold text-white"
                         >
                             {{ featuredGoal.name }}
                         </p>
@@ -376,7 +377,7 @@ const claimQuest = () => {
                             class="flex items-start justify-between gap-4 py-3"
                         >
                             <div class="min-w-0">
-                                <p class="break-words text-sm text-slate-200">
+                                <p class="wrap-break-word text-sm text-slate-200">
                                     {{ expense.description }}
                                 </p>
                                 <p class="mt-1 text-xs text-slate-400">

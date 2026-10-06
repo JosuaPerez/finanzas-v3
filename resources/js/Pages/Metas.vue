@@ -4,7 +4,7 @@ import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import { getSymbol, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { getSymbol, cleanNum } from '@/composables/useDebtUtils';
 import { useMoney } from '@/composables/useMoney';
 const { number: formatMoney, currency, locale, money } = useMoney();
 const page = usePage();
@@ -22,7 +22,7 @@ const form = ref({
     deadline: ''
 });
 
-// formatMoney, getSymbol, cleanNum, vMoney → imported from @/composables/useDebtUtils
+// formatMoney, getSymbol, cleanNum → imported from @/composables/useDebtUtils
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -77,7 +77,7 @@ const closeDiscardModal = () => { showDiscardModal.value = false; selectedGoal.v
 const saveGoal = () => {
     if (isSubmitting.value) return;
     const target = cleanNum(form.value.target_amount);
-    if (!form.value.name || target <= 0) {
+    if (!form.value.name || !Number.isFinite(target) || target <= 0 || !Number.isFinite(cleanNum(form.value.current_amount))) {
         showNotification("Nombra tu proyecto y define un costo válido.", "error");
         return;
     }
@@ -91,12 +91,13 @@ const saveGoal = () => {
     };
 
     isSubmitting.value = true;
-    router.post(route('metas.store'), payload, {
+    router.post(route('metas.store'), { ...payload, request_id: page.props.movementRequestId }, {
         preserveScroll: true,
         onSuccess: () => {
             form.value = { currency: currency.value, name: '', target_amount: '', current_amount: '', deadline: '' };
             showNotification('¡Plano añadido a la mesa de forja!', 'success');
         },
+        onError: (errors) => showNotification(Object.values(errors)[0] ?? 'Revisa los importes.', 'error'),
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -109,6 +110,7 @@ const executeDiscard = () => {
             showNotification('Plano destruido. Materiales liberados.', 'success');
             closeDiscardModal();
         },
+        onError: (errors) => showNotification(Object.values(errors)[0] ?? 'Revisa los importes.', 'error'),
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -116,13 +118,13 @@ const executeDiscard = () => {
 const submitForge = () => {
     if (isSubmitting.value) return;
     const amount = cleanNum(forgeAmount.value);
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
         showNotification("Ingresa una cantidad de recursos válida.", "error");
         return;
     }
 
     isSubmitting.value = true;
-    router.post(route('metas.add_funds', selectedGoal.value.id), { amount: amount }, {
+    router.post(route('metas.add_funds', selectedGoal.value.id), { amount, request_id: page.props.movementRequestId }, {
         preserveScroll: true,
         onSuccess: () => {
             const stats = getForgeStats(selectedGoal.value);
@@ -133,6 +135,7 @@ const submitForge = () => {
             }
             closeForgeModal();
         },
+        onError: (errors) => showNotification(Object.values(errors)[0] ?? 'Revisa los importes.', 'error'),
         onFinish: () => { isSubmitting.value = false; }
     });
 };
@@ -154,9 +157,9 @@ const submitForge = () => {
 
                     <!-- SECCIÓN IZQUIERDA: CREAR NUEVO PROYECTO -->
                     <div class="lg:col-span-4">
-                        <div class="bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-3xl p-6 border border-slate-700/60 ring-1 ring-white/5 sticky top-6 relative">
+                        <div class="bg-slate-900/80 backdrop-blur-xs overflow-hidden shadow-2xl sm:rounded-3xl p-6 border border-slate-700/60 ring-1 ring-white/5 sticky top-6 relative">
                             <!-- Ambient accent line -->
-                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+                            <div class="absolute top-0 left-0 right-0 h-[2px] bg-linear-to-r from-transparent via-emerald-500/50 to-transparent"></div>
                             
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="bg-emerald-500/20 p-2 rounded-xl border border-emerald-500/50">
@@ -185,11 +188,11 @@ const submitForge = () => {
                                     <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">
                                         Costo Total (Meta a alcanzar)
                                     </label>
-                                    <div class="relative rounded-md shadow-sm">
+                                    <div class="relative rounded-md shadow-xs">
                                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <span class="text-slate-500 font-bold">{{ getSymbol(form.currency) }}</span>
                                         </div>
-                                        <input type="text" v-model="form.target_amount" v-money inputmode="decimal"
+                                        <input type="text" v-model="form.target_amount" inputmode="decimal"
                                             class="w-full bg-slate-950 text-white rounded-xl border-slate-700 pl-14 py-3 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-600 font-mono text-lg"
                                             placeholder="0.00">
                                     </div>
@@ -198,11 +201,11 @@ const submitForge = () => {
                                 <div class="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl space-y-4">
                                     <div>
                                         <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Materiales Actuales (Si ya empezaste)</label>
-                                        <div class="relative rounded-md shadow-sm">
+                                        <div class="relative rounded-md shadow-xs">
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-emerald-600 font-bold">{{ getSymbol(form.currency) }}</span>
                                             </div>
-                                            <input type="text" v-model="form.current_amount" v-money inputmode="decimal"
+                                            <input type="text" v-model="form.current_amount" inputmode="decimal"
                                                 class="w-full bg-slate-900 text-white rounded-lg border-slate-700 pl-12 focus:ring-emerald-500 font-mono"
                                                 placeholder="0.00">
                                         </div>
@@ -230,7 +233,7 @@ const submitForge = () => {
                         <!-- HUD: Municiones (Recursos Disponibles) -->
                         <div v-if="ammunition > 0"
                             class="mb-6 bg-slate-900 border border-blue-500/30 p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-center shadow-2xl relative overflow-hidden sticky top-4 z-20 shadow-slate-900/50">
-                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+                            <div class="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-600 to-indigo-600"></div>
                             <div class="flex items-center gap-4 mb-3 sm:mb-0 relative z-10">
                                 <div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/50 text-2xl shadow-[0_0_15px_rgba(37,99,235,0.4)]">🔋</div>
                                 <div>
@@ -244,7 +247,7 @@ const submitForge = () => {
                         </div>
 
                         <!-- LISTA DE PROYECTOS -->
-                        <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 relative">
+                        <div class="bg-slate-900/80 backdrop-blur-xs border border-slate-700/60 ring-1 ring-white/5 overflow-hidden shadow-2xl sm:rounded-3xl p-6 md:p-8 relative">
                             
                             <div v-if="goals && goals.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 
@@ -289,10 +292,10 @@ const submitForge = () => {
                                         
                                         <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden relative border border-slate-700/50">
                                             <!-- Color de la barra animada -->
-                                            <div class="bg-gradient-to-r h-full transition-all duration-1000 ease-out relative"
+                                            <div class="bg-linear-to-r h-full transition-all duration-1000 ease-out relative"
                                                 :class="getForgeStats(goal).isCompleted ? 'from-emerald-600 to-teal-400' : 'from-blue-600 to-emerald-500'"
                                                 :style="{ width: getForgeStats(goal).percent + '%' }">
-                                                <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-[4px]"></div>
+                                                <div class="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-xs"></div>
                                             </div>
                                         </div>
                                         
@@ -358,11 +361,11 @@ const submitForge = () => {
                             </div>
 
                             <label class="block text-xs font-bold text-white mb-3 tracking-wide mt-6">¿Cuántos recursos vas a inyectar?</label>
-                            <div class="relative rounded-xl shadow-sm">
+                            <div class="relative rounded-xl shadow-xs">
                                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                     <span class="text-emerald-500 font-bold text-xl">➕</span>
                                 </div>
-                                <input type="text" v-model="forgeAmount" v-money autofocus inputmode="decimal"
+                                <input type="text" v-model="forgeAmount" autofocus inputmode="decimal"
                                     class="block w-full rounded-2xl border-slate-600 bg-slate-950 text-emerald-400 pl-14 py-5 text-2xl font-mono font-black focus:border-emerald-500 focus:ring-emerald-500 shadow-inner"
                                     placeholder="0.00">
                             </div>
@@ -376,7 +379,7 @@ const submitForge = () => {
                             <span>🔨</span> Inyectar
                         </button>
                         <button @click="closeForgeModal"
-                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-sm px-6 py-3 bg-slate-900 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 uppercase tracking-widest sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-xs px-6 py-3 bg-slate-900 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 uppercase tracking-widest sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
                             Cancelar
                         </button>
                     </div>
@@ -392,7 +395,7 @@ const submitForge = () => {
                 <div class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
                     <div class="bg-slate-900 px-6 pt-8 pb-6">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-2xl bg-red-500/10 border border-red-500/30 sm:mx-0 sm:h-12 sm:w-12 text-2xl">
+                            <div class="mx-auto shrink-0 flex items-center justify-center h-14 w-14 rounded-2xl bg-red-500/10 border border-red-500/30 sm:mx-0 sm:h-12 sm:w-12 text-2xl">
                                 🗑️
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
@@ -411,7 +414,7 @@ const submitForge = () => {
                             Destruir
                         </button>
                         <button @click="closeDiscardModal" type="button"
-                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-sm px-6 py-3 bg-slate-900 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
+                            class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-xs px-6 py-3 bg-slate-900 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 sm:mt-0 sm:ml-3 sm:w-auto transition-colors">
                             Mantener
                         </button>
                     </div>
