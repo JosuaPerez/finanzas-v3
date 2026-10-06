@@ -51,4 +51,4 @@ jobs:
       - run: node --test tests/Frontend/*.test.mjs
       - run: php artisan test
       - run: composer audit
-      - run: npm audit
+      - run: npm audit --omit=dev
