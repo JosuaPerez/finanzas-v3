@@ -31,6 +31,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'nativeRuntime' => (bool) config('nativephp-internal.running', false),
             'auth' => [
                 'user' => $request->user(),
                 // Streak data — available as usePage().props.auth.current_streak

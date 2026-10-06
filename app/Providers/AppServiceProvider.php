@@ -23,9 +23,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $nativeRuntime = (bool) config('nativephp-internal.running', false);
+
+        if ($nativeRuntime) {
+            // The embedded app has no Redis server or queue worker. Keep the
+            // database path provided by NativePHP so device data survives updates.
+            config([
+                'database.default' => 'sqlite',
+                'cache.default' => 'file',
+                'session.driver' => 'file',
+                'queue.default' => 'sync',
+            ]);
+        }
+
         Vite::prefetch(concurrency: 3);
 
-        if (config('app.env') === 'production') {
+        if (config('app.env') === 'production' && ! $nativeRuntime) {
             URL::forceScheme('https');
         }
 
