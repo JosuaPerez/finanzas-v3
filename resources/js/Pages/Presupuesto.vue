@@ -4,15 +4,19 @@ import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import { formatCurrency } from '@/utils';
+import { useMoney } from '@/composables/useMoney';
+const { money: formatCurrency, currency, locale } = useMoney();
 import { cleanNum, vMoney } from '@/composables/useDebtUtils';
 
 const props = defineProps({
     budgets:    { type: Array,  default: () => [] },
     totalDebts: { type: Number, default: 0 },
+    debtTotals: { type: Object, default: () => ({}) },
 });
 
 // ── Formulario de quincena ───────────────────────────────────────────────────
+const budgetCurrency = ref(currency.value);
+const sameCurrencyDebts = computed(() => Number(props.debtTotals[budgetCurrency.value] ?? 0));
 const income = ref('');
 const fixedExpenses = ref([
     { id: 1, name: 'Casa / Alquiler',          amount: '' },
@@ -25,7 +29,7 @@ const deductDebts = ref(false);
 const totalFixed  = computed(() => fixedExpenses.value.reduce((s, i) => s + cleanNum(i.amount), 0));
 const remaining   = computed(() => {
     let base = cleanNum(income.value) - totalFixed.value;
-    if (deductDebts.value) base -= props.totalDebts;
+    if (deductDebts.value) base -= sameCurrencyDebts.value;
     return base;
 });
 
@@ -44,17 +48,19 @@ const notify = (message, type = 'success') => {
 
 // ── Guardar presupuesto ──────────────────────────────────────────────────────
 const saveBudget = () => {
+    if (isSubmitting.value) return;
     if (cleanNum(income.value) <= 0) {
-        notify('Ingresa tu quincena para poder guardar el presupuesto.', 'error');
+        notify('Ingresa un ingreso para poder guardar el presupuesto.', 'error');
         return;
     }
     const payload = {
-        title:                `Quincena del ${new Date().toLocaleDateString('es-DO')}`,
+        currency: budgetCurrency.value,
+        title:                `Presupuesto del ${new Date().toLocaleDateString(locale.value)}`,
         income:               cleanNum(income.value),
         fixed_expenses_total: totalFixed.value,
         details: {
             fixed:          fixedExpenses.value.map(i => ({ name: i.name, amount: cleanNum(i.amount) })),
-            debts_deducted: deductDebts.value ? props.totalDebts : 0,
+            debts_deducted: deductDebts.value ? sameCurrencyDebts.value : 0,
             remaining:      remaining.value,
         },
     };
@@ -95,27 +101,32 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                 <!-- ── Page title ── -->
                 <PageHeader
                     subtitle="CENTRO DE MANDO"
-                    title="🛡️ Planificar Defensa"
-                    description="Distribuye tus suministros y calcula tu capital libre para la ofensiva."
+                    title="Presupuesto"
+                    description="Registra un ingreso y organiza tus gastos en una misma moneda."
                 />
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     <!-- ── LEFT: Calculator ── -->
+                    <div class="lg:col-span-12 rounded-xl border border-slate-800 p-4">
+                        <label for="budget-currency" class="mb-2 block text-sm text-slate-300">Moneda del nuevo presupuesto</label>
+                        <select id="budget-currency" v-model="budgetCurrency" class="finance-input"><option v-for="(label, code) in $page.props.finance.currencies" :key="code" :value="code">{{ code }} · {{ label }}</option></select>
+                        <p class="mt-2 text-sm text-slate-400">Solo se incluyen deudas en esta moneda. Tus presupuestos anteriores conservan su moneda.</p>
+                    </div>
                     <div class="lg:col-span-8">
                         <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 ring-1 ring-white/5 sm:rounded-3xl shadow-xl p-6 md:p-8 relative overflow-hidden">
                             <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500/60 to-transparent"></div>
 
                             <!-- 1. Income -->
                             <div class="mb-8 p-6 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
-                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-                                    1. Munición Base — ¿Cuánto cobraste?
+                                <label for="budget-income" class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+                                    1. Ingreso — ¿Cuánto recibiste?
                                 </label>
                                 <div class="relative rounded-xl shadow-sm">
                                     <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                        <span class="text-slate-500 font-bold sm:text-xl">RD$</span>
+                                        <span class="text-slate-500 font-bold sm:text-xl">{{ budgetCurrency }}</span>
                                     </div>
-                                    <input type="text" v-model="income" v-money inputmode="decimal"
+                                    <input id="budget-income" type="text" v-model="income" v-money inputmode="decimal"
                                         class="block w-full bg-slate-800 text-white rounded-xl border-slate-700 pl-16 py-4 text-xl font-mono focus:border-blue-500 focus:ring-blue-500 shadow-inner"
                                         placeholder="0.00">
                                 </div>
@@ -123,8 +134,8 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
 
                             <!-- 2. Fixed expenses -->
                             <div class="mb-8 p-6 border border-dashed border-slate-700 rounded-2xl bg-slate-950/50">
-                                <h3 class="text-lg font-bold text-white mb-1">2. Suministros Fijos</h3>
-                                <p class="text-xs text-slate-400 mb-5">Gastos ineludibles para mantener la base operativa.</p>
+                                <h3 class="text-lg font-bold text-white mb-1">2. Gastos fijos</h3>
+                                <p class="text-xs text-slate-400 mb-5">Organiza los gastos que necesitas cubrir con este ingreso.</p>
 
                                 <div class="space-y-3 mb-5">
                                     <div v-for="(gasto, index) in fixedExpenses" :key="gasto.id"
@@ -133,7 +144,7 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                                             class="w-full md:w-1/2 border-0 border-b border-slate-700 focus:border-blue-500 focus:ring-0 font-bold text-slate-300 bg-transparent placeholder-slate-600"
                                             placeholder="Concepto (Ej. Luz)">
                                         <div class="flex items-center w-full md:w-1/2 gap-2">
-                                            <span class="text-slate-500 font-bold ml-2 md:ml-0">RD$</span>
+                                            <span class="text-slate-500 font-bold ml-2 md:ml-0">{{ budgetCurrency }}</span>
                                             <input type="text" v-model="gasto.amount" v-money inputmode="decimal"
                                                 class="w-full bg-slate-800 text-white border-slate-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                                                 placeholder="0.00">
@@ -153,16 +164,16 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
 
                                 <div class="bg-red-900/20 border-l-4 border-red-500 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center shadow-inner">
                                     <h3 class="text-red-400 font-bold text-sm uppercase tracking-wider mb-2 sm:mb-0">Munición Comprometida:</h3>
-                                    <p class="text-2xl font-black text-red-500 font-mono">{{ formatCurrency(totalFixed) }}</p>
+                                    <p class="text-2xl font-black text-red-500 font-mono">{{ formatCurrency(totalFixed, budgetCurrency) }}</p>
                                 </div>
                             </div>
 
                             <!-- 3. Active debts toggle -->
-                            <div v-if="totalDebts > 0"
+                            <div v-if="sameCurrencyDebts > 0"
                                 class="mb-8 bg-amber-900/20 p-5 rounded-2xl border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-inner">
                                 <div>
                                     <h4 class="font-bold text-amber-400 flex items-center gap-2">⚠️ Amenazas Activas</h4>
-                                    <p class="text-sm text-amber-200/70 mt-1">Tienes <strong class="text-amber-300 font-mono">{{ formatCurrency(totalDebts) }}</strong> en Jefes detectados.</p>
+                                    <p class="text-sm text-amber-200/70 mt-1">Tienes <strong class="text-amber-300 font-mono">{{ formatCurrency(sameCurrencyDebts, budgetCurrency) }}</strong> en deudas registradas en esta moneda.</p>
                                 </div>
                                 <label class="flex items-center cursor-pointer">
                                     <div class="relative">
@@ -183,11 +194,11 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                                     <div v-if="remaining > 0" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
                                     <h3 class="text-xs font-black uppercase tracking-widest mb-3"
                                         :class="remaining > 0 ? 'text-blue-400' : (remaining === 0 ? 'text-slate-500' : 'text-red-400')">
-                                        ⚔️ Tu Capital para la Guerra
+                                        Disponible estimado
                                     </h3>
                                     <div class="text-5xl font-black font-mono tracking-tight"
                                         :class="remaining > 0 ? 'text-white' : (remaining === 0 ? 'text-slate-600' : 'text-red-500')">
-                                        {{ formatCurrency(remaining) }}
+                                        {{ formatCurrency(remaining, budgetCurrency) }}
                                     </div>
                                 </div>
                             </div>
@@ -226,11 +237,11 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                                         <div class="space-y-2">
                                             <p class="text-xs text-slate-300 flex justify-between border-b border-slate-800/50 pb-2">
                                                 <span class="font-bold text-slate-500">Ingreso:</span>
-                                                <span class="font-mono">{{ formatCurrency(budget.income) }}</span>
+                                                <span class="font-mono">{{ formatCurrency(budget.income, budget.currency) }}</span>
                                             </p>
                                             <p class="text-xs text-slate-300 flex justify-between">
                                                 <span class="font-bold text-slate-500">G. Fijos:</span>
-                                                <span class="font-mono text-red-400">{{ formatCurrency(budget.fixed_expenses_total) }}</span>
+                                                <span class="font-mono text-red-400">{{ formatCurrency(budget.fixed_expenses_total, budget.currency) }}</span>
                                             </p>
                                         </div>
                                     </div>
@@ -262,24 +273,24 @@ const closeModal = () => { showModal.value = false; selectedBudget.value = null;
                             </h3>
                             <div class="flex justify-between bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner">
                                 <span class="text-slate-400 font-bold uppercase text-xs tracking-wider">Ingreso Total:</span>
-                                <span class="text-blue-400 font-black font-mono text-lg">{{ formatCurrency(selectedBudget.income) }}</span>
+                                <span class="text-blue-400 font-black font-mono text-lg">{{ formatCurrency(selectedBudget.income, selectedBudget.currency) }}</span>
                             </div>
                             <h4 class="font-bold text-slate-300 text-xs uppercase tracking-widest mb-3">Suministros Consumidos:</h4>
                             <ul class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2">
                                 <li v-for="item in selectedBudget.details.fixed" :key="item.name"
                                     class="flex justify-between text-sm bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                                     <span class="text-slate-300 font-medium">{{ item.name }}</span>
-                                    <span class="text-red-400 font-bold font-mono">{{ formatCurrency(item.amount) }}</span>
+                                    <span class="text-red-400 font-bold font-mono">{{ formatCurrency(item.amount, selectedBudget.currency) }}</span>
                                 </li>
                             </ul>
                             <div v-if="selectedBudget.details.debts_deducted > 0"
                                 class="flex justify-between items-center text-sm bg-amber-900/20 p-4 rounded-xl border border-amber-500/30 mt-4">
                                 <span class="text-amber-400 font-bold uppercase text-xs">Ataque a Jefes:</span>
-                                <span class="text-amber-500 font-black font-mono">- {{ formatCurrency(selectedBudget.details.debts_deducted) }}</span>
+                                <span class="text-amber-500 font-black font-mono">- {{ formatCurrency(selectedBudget.details.debts_deducted, selectedBudget.currency) }}</span>
                             </div>
                             <div class="mt-6 p-5 bg-blue-900/20 rounded-2xl flex justify-between items-center border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
                                 <span class="font-bold text-blue-400 uppercase text-xs tracking-wider">Capital Libre:</span>
-                                <span class="font-black text-white font-mono text-2xl">{{ formatCurrency(selectedBudget.details.remaining) }}</span>
+                                <span class="font-black text-white font-mono text-2xl">{{ formatCurrency(selectedBudget.details.remaining, selectedBudget.currency) }}</span>
                             </div>
                         </div>
                         <div class="bg-slate-950 px-6 py-4 flex justify-end border-t border-slate-800">

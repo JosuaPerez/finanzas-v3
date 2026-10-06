@@ -30,7 +30,7 @@ class GoalController extends Controller
             'name'           => 'required|string|max:255',
             'target_amount'  => 'required|numeric|min:0.01',
             'current_amount' => 'nullable|numeric|min:0',
-            'currency'       => 'required|string|in:DOP,USD',
+            'currency'       => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
             'deadline'       => 'nullable|date',
         ]);
 

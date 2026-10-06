@@ -10,8 +10,11 @@ class Budget extends Model
     use HasFactory;
 
     // Le decimos a Laravel qué columnas se pueden llenar de forma segura
+    protected $attributes = ['currency' => 'DOP'];
+
     protected $fillable = [
-        'user_id', 
+        'user_id',
+        'currency',
         'title', 
         'income', 
         'fixed_expenses_total', 

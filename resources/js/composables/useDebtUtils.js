@@ -16,19 +16,16 @@
  * @param {number|string} amount
  * @returns {string}
  */
-export const formatMoney = (amount) =>
-    Number(amount).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+import { formatNumber } from '@/utils';
+export const formatMoney = formatNumber;
 
 /**
  * Return the currency symbol for a given currency code.
  *
- * @param {'DOP'|'USD'} currency
- * @returns {'RD$'|'US$'}
+ * @param {string} currency
+ * @returns {string} ISO currency code
  */
-export const getSymbol = (currency) => (currency === 'USD' ? 'US$' : 'RD$');
+export const getSymbol = (currency) => currency || 'DOP';
 
 /**
  * Parse a formatted money string (e.g. "1,234.56") into a plain float.

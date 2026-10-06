@@ -18,6 +18,7 @@ class BudgetController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'income' => 'required|numeric|min:0',
+            'currency' => ['sometimes', 'required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
             'fixed_expenses_total' => 'required|numeric|min:0',
             'details' => 'required|array',
         ]);
@@ -27,6 +28,7 @@ class BudgetController extends Controller
             'user_id' => auth()->id(),
             'title' => $request->title,
             'income' => $request->income,
+            'currency' => $request->input('currency', $request->user()->preferred_currency),
             'fixed_expenses_total' => $request->fixed_expenses_total,
             'details' => json_encode($request->details), // Convertimos el array a JSON
         ]);

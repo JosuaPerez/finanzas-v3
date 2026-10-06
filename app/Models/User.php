@@ -18,6 +18,8 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SurvivalMechanics;
 
+    protected $attributes = ['preferred_currency' => 'DOP', 'number_locale' => 'es-DO'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -28,6 +30,9 @@ class User extends Authenticatable
         'email',
         'password',
         'google_id',
+        'preferred_currency',
+        'number_locale',
+        'financial_preferences_set_at',
         'current_streak',
         'longest_streak',
         'last_action_date',
@@ -63,6 +68,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at'       => 'datetime',
+            'financial_preferences_set_at' => 'datetime',
             'password'                => 'hashed',
             'last_action_date'        => 'date',
             'daily_reward_claimed_at' => 'date',

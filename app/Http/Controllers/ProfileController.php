@@ -40,6 +40,21 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit');
     }
 
+    public function financialPreferences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'preferred_currency' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
+            'number_locale' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.locales')))],
+        ]);
+        $request->user()->update([
+            ...$validated,
+            'financial_preferences_set_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\Cache::forget('dashboard_data_user_' . $request->user()->id);
+
+        return back()->with('success', 'Preferencias guardadas. Tus registros conservan su moneda original.');
+    }
+
     /**
      * Delete the user's account.
      */

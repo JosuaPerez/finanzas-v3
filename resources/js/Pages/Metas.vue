@@ -2,9 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import { formatMoney, getSymbol, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { getSymbol, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { useMoney } from '@/composables/useMoney';
+const { number: formatMoney, currency, locale, money } = useMoney();
+const page = usePage();
 
 const props = defineProps({
     goals: { type: Array, default: () => [] },
@@ -12,7 +15,7 @@ const props = defineProps({
 });
 
 const form = ref({
-    currency: 'DOP',
+    currency: currency.value,
     name: '',
     target_amount: '',
     current_amount: '',
@@ -72,6 +75,7 @@ const closeDiscardModal = () => { showDiscardModal.value = false; selectedGoal.v
 
 // --- ACCIONES CON LA BASE DE DATOS (RUTAS A IMPLEMENTAR EN LARAVEL) ---
 const saveGoal = () => {
+    if (isSubmitting.value) return;
     const target = cleanNum(form.value.target_amount);
     if (!form.value.name || target <= 0) {
         showNotification("Nombra tu proyecto y define un costo válido.", "error");
@@ -90,7 +94,7 @@ const saveGoal = () => {
     router.post(route('metas.store'), payload, {
         preserveScroll: true,
         onSuccess: () => {
-            form.value = { currency: 'DOP', name: '', target_amount: '', current_amount: '', deadline: '' };
+            form.value = { currency: currency.value, name: '', target_amount: '', current_amount: '', deadline: '' };
             showNotification('¡Plano añadido a la mesa de forja!', 'success');
         },
         onFinish: () => { isSubmitting.value = false; }
@@ -110,6 +114,7 @@ const executeDiscard = () => {
 };
 
 const submitForge = () => {
+    if (isSubmitting.value) return;
     const amount = cleanNum(forgeAmount.value);
     if (!amount || amount <= 0) {
         showNotification("Ingresa una cantidad de recursos válida.", "error");
@@ -163,14 +168,10 @@ const submitForge = () => {
                                 </div>
                             </div>
 
-                            <div class="flex p-1 bg-slate-800 rounded-xl mb-6 border border-slate-700 w-1/2 mx-auto">
-                                <button @click="form.currency = 'DOP'" type="button"
-                                    :class="form.currency === 'DOP' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
-                                    class="w-1/2 py-2 text-xs rounded-lg transition-all">RD$</button>
-                                <button @click="form.currency = 'USD'" type="button"
-                                    :class="form.currency === 'USD' ? 'bg-emerald-700 text-white font-bold' : 'text-slate-400 hover:text-white'"
-                                    class="w-1/2 py-2 text-xs rounded-lg transition-all">US$</button>
-                            </div>
+                            <div class="mb-5 w-full">
+                                    <label for="record-currency" class="mb-2 block text-sm text-slate-300">Moneda</label>
+                                    <select id="record-currency" v-model="form.currency" class="finance-input"><option v-for="(label, code) in page.props.finance.currencies" :key="code" :value="code">{{ code }} · {{ label }}</option></select>
+                                </div>
 
                             <div class="space-y-5">
                                 <div>

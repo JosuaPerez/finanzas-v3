@@ -37,7 +37,23 @@ class HandleInertiaRequests extends Middleware
                 'current_streak' => $request->user()?->current_streak ?? 0,
             ],
             // Flash data — toast system reads level_up and streak_bonus from here.
+            'finance' => [
+                'currencies' => config('finance.currencies'),
+                'locales' => config('finance.locales'),
+            ],
+            'movementDebts' => fn () => $request->user()
+                ? $request->user()->debts()->where('balance', '>', 0)->get(['id', 'name', 'balance', 'currency', 'minimum_payment'])
+                : [],
+            'movementBudget' => function () use ($request) {
+                $budget = $request->user()
+                    ? \App\Models\Budget::where('user_id', $request->user()->id)->latest('id')->first()
+                    : null;
+                if (! $budget) return null;
+                $details = is_string($budget->details) ? json_decode($budget->details, true) : $budget->details;
+                return ['currency' => $budget->currency, 'remaining' => $details['remaining'] ?? null];
+            },
             'flash' => [
+                'success' => $request->session()->get('success'),
                 'level_up'      => $request->session()->get('level_up'),
                 'streak_bonus'  => $request->session()->get('streak_bonus'),
                 'quest_claimed' => $request->session()->get('quest_claimed'),

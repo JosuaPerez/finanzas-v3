@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer components {
+    .finance-input {
+        @apply block min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-base text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-cyan-400;
+    }
+    .finance-button {
+        @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400;
+    }
+    .finance-link {
+        @apply inline-flex min-h-[44px] items-center gap-2 text-sm font-medium text-cyan-300 hover:text-cyan-200;
+    }
+}
+.app-topbar { padding-top: env(safe-area-inset-top, 0px); }
+.app-main { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.app-bottom-nav { padding: 4px env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.app-toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.movement-dialog { width: calc(100% - 24px); max-width: 480px; margin: auto; padding: 0; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #334155; border-radius: 20px; background: #0f172a; color: #cbd5e1; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.movement-dialog::backdrop { background: rgb(2 6 23 / 80%); }
+:focus-visible { outline: 2px solid #67e8f9; outline-offset: 3px; }
+@media (min-width: 1024px) { .app-main { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); padding-bottom: 24px; } .app-toast { bottom: 24px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+
+.app-topbar > div { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }

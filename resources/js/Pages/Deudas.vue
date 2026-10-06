@@ -3,12 +3,16 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BossCard from '@/Components/BossCard.vue';
 import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
-import { formatMoney, getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { getSymbol, getHPStats, cleanNum, vMoney } from '@/composables/useDebtUtils';
+import { useMoney } from '@/composables/useMoney';
+const { number: formatMoney, currency, locale, money } = useMoney();
+const page = usePage();
 
 const props = defineProps({
     debts:             Array,
+    budget_currency: { type: String, default: null },
     ammunition:        { type: Number, default: 0 },
     usd_exchange_rate: { type: Number, default: 59.50 },
     fallen_bosses:     { type: Array,  default: () => [] },
@@ -16,7 +20,7 @@ const props = defineProps({
 
 const form = ref({
     type: 'loan',
-    currency: 'DOP',
+    currency: currency.value,
     name: '',
     balance: '',
     interest_rate: '',
@@ -77,7 +81,7 @@ const payoffDate = computed(() => {
     if (!monthsToPayoff.value || !isFinite(monthsToPayoff.value)) return null;
     const d = new Date();
     d.setMonth(d.getMonth() + monthsToPayoff.value);
-    return d.toLocaleDateString('es-DO', { month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(locale.value, { month: 'long', year: 'numeric' });
 });
 
 /** Current month number into the loan (1-based), derived from fecha_inicio */
@@ -190,12 +194,15 @@ const payErrors = ref({});
 const dopCost = computed(() => {
     const amount = cleanNum(paymentAmount.value);
     if (!amount) return 0;
-    return selectedDebt.value?.currency === 'USD'
+    return selectedDebt.value?.currency === 'USD' && props.budget_currency === 'DOP'
         ? amount * props.usd_exchange_rate
         : amount;
 });
 
 /** True when the DOP cost of the attack exceeds available capital. */
+const currencyMismatch = computed(() => selectedDebt.value && props.budget_currency
+    && selectedDebt.value.currency !== props.budget_currency
+    && !(selectedDebt.value.currency === 'USD' && props.budget_currency === 'DOP'));
 const isOverAmmo = computed(() =>
     props.ammunition > 0 && dopCost.value > props.ammunition
 );
@@ -219,6 +226,7 @@ const confirmDelete = (debt) => {
 const closeDeleteModal = () => { showDeleteModal.value = false; selectedDebt.value = null; };
 
 const saveDebt = () => {
+    if (isSubmitting.value) return;
     const cleanBalance = cleanNum(form.value.balance);
     if (!form.value.name || cleanBalance <= 0) {
         showNotification("Completa el nombre y un saldo válido.", "error");
@@ -265,6 +273,7 @@ const executeDelete = () => {
 };
 
 const submitPayment = () => {
+    if (isSubmitting.value) return;
     const amount = cleanNum(paymentAmount.value);
     if (!amount || amount <= 0) {
         showNotification("Ingresa un monto válido para atacar.", "error");
@@ -326,13 +335,9 @@ const submitPayment = () => {
                                         :class="form.type === 'credit_card' ? 'bg-orange-600 text-white font-bold shadow-md' : 'text-slate-400 hover:text-white'"
                                         class="w-1/2 py-2 text-xs rounded-md transition-all">👾 Tarjeta</button>
                                 </div>
-                                <div class="flex p-1 bg-slate-800 rounded-lg w-1/3 border border-slate-700">
-                                    <button @click="form.currency = 'DOP'" type="button"
-                                        :class="form.currency === 'DOP' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
-                                        class="w-1/2 py-2 text-xs rounded-md transition-all">RD$</button>
-                                    <button @click="form.currency = 'USD'" type="button"
-                                        :class="form.currency === 'USD' ? 'bg-green-700 text-white font-bold' : 'text-slate-400 hover:text-white'"
-                                        class="w-1/2 py-2 text-xs rounded-md transition-all">US$</button>
+                                <div class="mb-5 w-full">
+                                    <label for="record-currency" class="mb-2 block text-sm text-slate-300">Moneda</label>
+                                    <select id="record-currency" v-model="form.currency" class="finance-input"><option v-for="(label, code) in page.props.finance.currencies" :key="code" :value="code">{{ code }} · {{ label }}</option></select>
                                 </div>
                             </div>
 
@@ -638,7 +643,7 @@ const submitPayment = () => {
                                 </div>
                             </div>
                             <div class="text-center sm:text-right w-full sm:w-auto bg-slate-950 px-6 py-3 rounded-xl border border-slate-800 shadow-inner relative z-10">
-                                <span class="text-3xl font-black text-white font-mono tracking-tight">RD$ {{ formatMoney(ammunition) }}</span>
+                                <span class="text-3xl font-black text-white font-mono tracking-tight">{{ money(ammunition, budget_currency ?? currency) }}</span>
                             </div>
                         </div>
 
@@ -709,7 +714,7 @@ const submitPayment = () => {
                                     <div class="min-w-0 flex-1">
                                         <p class="text-xs font-black text-slate-400 truncate">{{ boss.name }}</p>
                                         <p class="text-[10px] text-slate-600 mt-0.5">
-                                            Derrotado el {{ new Date(boss.updated_at).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' }) }}
+                                            Derrotado el {{ new Date(boss.updated_at).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }) }}
                                         </p>
                                     </div>
                                     <div class="flex-shrink-0 text-right">
@@ -737,7 +742,7 @@ const submitPayment = () => {
 
                         <div v-if="ammunition > 0" class="mt-6 mb-6 p-4 bg-blue-900/30 border border-blue-500/30 rounded-xl flex justify-between items-center">
                             <span class="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">🔋 Munición:</span>
-                            <span class="text-lg font-black text-blue-300 font-mono">RD$ {{ formatMoney(ammunition) }}</span>
+                            <span class="text-lg font-black text-blue-300 font-mono">{{ money(ammunition, budget_currency ?? currency) }}</span>
                         </div>
 
                         <div class="mt-4">
@@ -763,7 +768,7 @@ const submitPayment = () => {
                                 leave-from-class="opacity-100"
                                 leave-to-class="opacity-0"
                             >
-                                <p v-if="selectedDebt?.currency === 'USD' && cleanNum(paymentAmount) > 0"
+                                <p v-if="selectedDebt?.currency === 'USD' && budget_currency === 'DOP' && cleanNum(paymentAmount) > 0"
                                     class="mt-3 text-sm text-blue-400 font-medium leading-relaxed">
                                     Equivalente a <strong class="font-mono text-blue-300">RD$ {{ formatMoney(dopCost) }}</strong>.
                                     Tasa de referencia ({{ usd_exchange_rate }}).
@@ -785,11 +790,13 @@ const submitPayment = () => {
                                     <span class="text-base shrink-0">⚠️</span>
                                     <p class="text-amber-300 text-xs font-bold leading-relaxed">
                                         Munición insuficiente. Capital disponible:
-                                        <span class="font-mono">RD$ {{ formatMoney(ammunition) }}</span>
+                                        <span class="font-mono">{{ money(ammunition, budget_currency ?? currency) }}</span>
                                     </p>
                                 </div>
                             </Transition>
 
+                            <p v-if="currencyMismatch" class="mt-3 text-sm text-amber-300">La deuda y el presupuesto tienen monedas diferentes. No se hará una conversión automática.</p>
+                            <p v-if="payErrors.amount" role="alert" class="mt-3 text-sm text-red-300">{{ payErrors.amount }}</p>
                             <!-- Backend municion error (server-side catch) -->
                             <div v-if="payErrors.municion"
                                 class="mt-3 flex items-center gap-2 p-3 bg-red-900/40 border border-red-500/50 rounded-xl">
@@ -802,7 +809,7 @@ const submitPayment = () => {
                     </div>
                     <div class="bg-slate-800/50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-700">
                         <button @click="submitPayment"
-                            :disabled="isSubmitting || isOverAmmo"
+                            :disabled="isSubmitting || isOverAmmo || currencyMismatch"
                             :class="{
                                 'opacity-70 cursor-wait !pointer-events-none': isSubmitting,
                                 'opacity-50 cursor-not-allowed !pointer-events-none': isOverAmmo && !isSubmitting,
