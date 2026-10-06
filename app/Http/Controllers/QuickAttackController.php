@@ -20,11 +20,13 @@ class QuickAttackController extends Controller
         $validated = $request->validate([
             'monto'       => ['required', 'numeric', 'min:0.01'],
             'descripcion' => ['required', 'string', 'max:255'],
+            'currency' => ['sometimes', 'required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
         ]);
 
         Expense::create([
             'user_id'     => $request->user()->id,
             'amount'      => $validated['monto'],
+            'currency'    => $validated['currency'] ?? $request->user()->preferred_currency,
             'description' => $validated['descripcion'],
         ]);
 
@@ -36,6 +38,6 @@ class QuickAttackController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', '¡Suministro registrado! +15 XP');
+            ->with('success', 'Gasto registrado en tu historial. +15 XP');
     }
 }

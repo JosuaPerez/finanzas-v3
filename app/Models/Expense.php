@@ -9,8 +9,11 @@ class Expense extends Model
 {
     use HasFactory;
 
+    protected $attributes = ['currency' => 'DOP'];
+
     protected $fillable = [
         'user_id',
+        'currency',
         'amount',
         'description',
     ];

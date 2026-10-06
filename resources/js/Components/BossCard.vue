@@ -1,5 +1,7 @@
 <script setup>
-import { formatMoney, getSymbol, getHPStats } from '@/composables/useDebtUtils';
+import { getSymbol, getHPStats } from '@/composables/useDebtUtils';
+import { useMoney } from '@/composables/useMoney';
+const { number: formatMoney, currency, locale, money } = useMoney();
 
 /**
  * BossCard.vue — Renders a single debt as an RPG "boss" enemy card.

@@ -31,7 +31,7 @@ class DebtController extends Controller
             'interest_rate'         => 'required|numeric|min:0',
             'minimum_payment'       => 'required|numeric|min:0',
             'type'                  => 'required|string|in:loan,credit_card',
-            'currency'              => 'required|string|in:DOP,USD',
+            'currency'              => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('finance.currencies')))],
             'credit_limit'          => 'nullable|numeric|min:0',
             'cutoff_date'           => 'nullable|integer|min:1|max:31',
             'payment_date'          => 'nullable|integer|min:1|max:31',
@@ -75,7 +75,7 @@ class DebtController extends Controller
         // If no budget exists, $capitalLibre stays 0 and the guard is skipped
         // so users without a budget aren't hard-blocked.
         $budget       = \App\Models\Budget::where('user_id', $request->user()->id)
-            ->latest()
+            ->latest('id')
             ->first();
         $details      = $budget
             ? (is_string($budget->details)
@@ -84,27 +84,38 @@ class DebtController extends Controller
             : [];
         $capitalLibre = (float) ($details['remaining'] ?? 0);
 
-        // If the debt is in USD, convert the payment amount to DOP before
-        // comparing against the DOP-denominated capital libre.
-        $exchangeRate = $this->rateService->getUsdSellRate();
-        $dopCost      = $debt->currency === 'USD'
-            ? (float) $validated['amount'] * $exchangeRate
-            : (float) $validated['amount'];
+        // Only the existing USD-debt / DOP-budget pair has a conversion.
+        // Same-currency financial amounts are never converted.
+        $sameCurrency = ! $budget || $budget->currency === $debt->currency;
+        $legacyConversion = $budget && $budget->currency === 'DOP' && $debt->currency === 'USD';
+        if (! $sameCurrency && ! $legacyConversion) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'amount' => 'La deuda y el presupuesto tienen monedas diferentes. No se realizará una conversión automática.',
+            ]);
+        }
+        $budgetCost = (float) $validated['amount'];
+        if ($legacyConversion) {
+            $budgetCost *= $this->rateService->getUsdSellRate();
+        }
 
-        if ($capitalLibre > 0 && $dopCost > $capitalLibre) {
+        if ($capitalLibre > 0 && $budgetCost > $capitalLibre) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'municion' => 'Munición insuficiente (Capital Libre) para este ataque.',
             ]);
         }
 
-        $this->debtService->applyPayment($debt, (float) $validated['amount']);
+        $this->debtService->applyPayment($debt, (float) $validated['amount'], $budgetCost);
 
         $user = $request->user();
 
         // ── RPG Combat: real debt payment = real boss damage ─────────────────
-        // Damage is denominated in DOP so both currencies hit the boss equally.
+        // Preserve the existing USD-to-DOP normalization for RPG damage.
+        // It does not change the currency of the financial receipt.
         // CombatService handles defeat detection and XP award internally.
-        $this->combatService->processAttack($user, $dopCost);
+        $damage = $debt->currency === 'USD' && ! $legacyConversion
+            ? (float) $validated['amount'] * $this->rateService->getUsdSellRate()
+            : $budgetCost;
+        $this->combatService->processAttack($user, $damage);
 
         // ── Achievement checks (async) ────────────────────────────────────────
         EvaluateAchievementsJob::dispatch($user, 'debt_payment_made');
@@ -113,7 +124,7 @@ class DebtController extends Controller
             EvaluateAchievementsJob::dispatch($user, 'debt_eliminated');
         }
 
-        return redirect()->back()->with('success', 'Disparo certero. Saldo actualizado.');
+        return redirect()->back()->with('success', 'Pago registrado. Saldo de la deuda y presupuesto actualizados cuando existe presupuesto.');
     }
 
     public function destroy(Debt $debt): RedirectResponse

@@ -16,27 +16,31 @@ class DebtService
      * @param  float  $amount  The payment amount (must be > 0).
      * @return bool   True if the debt is now fully paid off (balance == 0).
      */
-    public function applyPayment(Debt $debt, float $amount): bool
+    public function applyPayment(Debt $debt, float $amount, ?float $budgetCost = null): bool
     {
         // 1. Deduct from the debt balance, floor at 0
         $debt->balance = max(0, $debt->balance - $amount);
         $debt->save();
 
         // 2. Reflect payment against the active budget's remaining capital
-        $budget = Budget::where('user_id', $debt->user_id)->latest()->first();
+        $budget = Budget::where('user_id', $debt->user_id)->latest('id')->first();
 
-        if ($budget) {
+        if ($budget && ($budget->currency === $debt->currency || $budgetCost !== null)) {
             $details = is_string($budget->details)
                 ? json_decode($budget->details, true)
                 : (array) $budget->details;
 
             // Deduct from free capital
-            $details['remaining'] = max(0, ($details['remaining'] ?? 0) - $amount);
+            $details['remaining'] = max(0, ($details['remaining'] ?? 0) - ($budgetCost ?? $amount));
 
             // Append payment receipt
             $details['debt_payments'][] = [
                 'name'   => $debt->name,
                 'amount' => $amount,
+                'currency' => $debt->currency,
+                'budget_amount' => $budgetCost ?? $amount,
+                'budget_currency' => $budget->currency,
+                'paid_at' => now()->toIso8601String(),
             ];
 
             $budget->details = $details;

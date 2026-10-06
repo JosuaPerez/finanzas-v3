@@ -36,7 +36,7 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
         // 3. ⚔️ NUEVA SECCIÓN: Pagos a Deudas
         if (!empty($details['debt_payments'])) {
             foreach ($details['debt_payments'] as $payment) {
-                $rows[] = ['⚔️ Ataque a Deuda', $payment['name'], $payment['amount']];
+                $rows[] = ['⚔️ Ataque a Deuda', $payment['name'], $payment['budget_amount'] ?? $payment['amount']];
             }
             $rows[] = ['', '', ''];
         }
@@ -49,7 +49,7 @@ class BudgetExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSiz
 
     public function headings(): array
     {
-        return ['Categoría', 'Concepto', 'Monto (RD$)'];
+        return ['Categoría', 'Concepto', 'Monto (' . $this->budget->currency . ')'];
     }
 
     public function styles(Worksheet $sheet)

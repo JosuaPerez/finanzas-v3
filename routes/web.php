@@ -7,12 +7,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\QuickAttackController;
 use App\Http\Controllers\QuestController;
-use App\Services\DailyQuestEngine;
 use App\Models\Budget;
 use App\Models\Debt;
-use App\Models\Expense;
-use App\Models\Achievement;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -32,76 +28,20 @@ Route::get('/', function () {
 // Ruta pública: Términos y Condiciones (no requiere autenticación)
 Route::get('/terminos', fn () => Inertia::render('Terms'))->name('terminos');
 
-use App\Models\Goal;
 
-Route::get('/dashboard', function () {
-    $uid  = auth()->id();
-    $data = Cache::remember('dashboard_data_user_' . $uid, now()->addMinutes(15), function () use ($uid) {
-        $totalDebts       = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
-        $activeDebtCount  = Debt::where('user_id', $uid)->where('balance', '>', 0)->count();
-        $totalGoalsSaved  = Goal::where('user_id', $uid)->sum('current_amount');
-        $totalGoalsTarget = Goal::where('user_id', $uid)->sum('target_amount');
-        $budgetCount      = Budget::where('user_id', $uid)->count();
-        $lastBudget       = Budget::where('user_id', $uid)->latest()->first();
-        $lastCapitalLibre = 0;
-        if ($lastBudget) {
-            $details          = is_string($lastBudget->details) ? json_decode($lastBudget->details, true) : $lastBudget->details;
-            $lastCapitalLibre = $details['remaining'] ?? 0;
-        }
-
-        $combatLog = Expense::where('user_id', $uid)
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(fn ($e) => [
-                'type'        => 'Ataque Rápido',
-                'description' => $e->description,
-                'amount'      => $e->amount,
-                'time'        => $e->created_at->diffForHumans(),
-            ]);
-
-        // All achievements with unlock status for this user — single query via eager load.
-        // Previously: Achievement::whereHas(...) + Achievement::all() = 2 round-trips.
-        // Now: one JOIN-backed eager load covers both the list and the pivot check.
-        $achievements = Achievement::with(['users' => fn ($q) => $q->where('user_id', $uid)])
-            ->get()
-            ->map(fn ($a) => [
-                'id'          => $a->id,
-                'name'        => $a->name,
-                'description' => $a->description,
-                'icon_name'   => $a->icon_name,
-                'unlocked_at' => $a->users->isNotEmpty() ? true : null,
-            ]);
-
-        return [
-            'totalDebts'       => (float) $totalDebts,
-            'activeDebtCount'  => (int)   $activeDebtCount,
-            'totalGoalsSaved'  => (float) $totalGoalsSaved,
-            'totalGoalsTarget' => (float) $totalGoalsTarget,
-            'budgetCount'      => (int)   $budgetCount,
-            'lastCapitalLibre' => (float) $lastCapitalLibre,
-            'combatLog'        => $combatLog,
-            'achievements'     => $achievements,
-            'quests'           => app(DailyQuestEngine::class)->getStatus(auth()->user()),
-            'chartData'        => [
-                'debts'   => (float) $totalDebts,
-                'capital' => (float) $lastCapitalLibre,
-                'goals'   => (float) $totalGoalsSaved,
-            ],
-        ];
-    });
-
-    return Inertia::render('Dashboard', $data);
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', App\Http\Controllers\DashboardController::class)
+    ->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/presupuesto', function () {
     $uid            = auth()->id();
-    $misPresupuestos = Budget::where('user_id', $uid)->latest()->get();
-    $totalDebts      = Debt::where('user_id', $uid)->where('balance', '>', 0)->sum('balance');
+    $misPresupuestos = Budget::where('user_id', $uid)->latest('id')->get();
+    $totalDebts      = Debt::where('user_id', $uid)->where('balance', '>', 0)
+        ->where('currency', auth()->user()->preferred_currency)->sum('balance');
 
     return Inertia::render('Presupuesto', [
         'budgets'    => $misPresupuestos,
         'totalDebts' => (float) $totalDebts,
+        'debtTotals' => Debt::where('user_id', $uid)->where('balance', '>', 0)->get()->groupBy('currency')->map(fn ($items) => (float) $items->sum('balance')),
     ]);
 })->middleware(['auth', 'verified'])->name('presupuesto');
 
@@ -112,7 +52,7 @@ Route::get('/deudas', function () {
     $misDeudas = Debt::where('user_id', $uid)->where('balance', '>', 0)->get();
 
     // 2. Último presupuesto → municiones
-    $ultimoPresupuesto = Budget::where('user_id', $uid)->latest()->first();
+    $ultimoPresupuesto = Budget::where('user_id', $uid)->latest('id')->first();
     $capitalLibre = 0;
     if ($ultimoPresupuesto) {
         $details      = is_string($ultimoPresupuesto->details) ? json_decode($ultimoPresupuesto->details, true) : $ultimoPresupuesto->details;
@@ -128,7 +68,9 @@ Route::get('/deudas', function () {
     return Inertia::render('Deudas', [
         'debts'             => $misDeudas,
         'ammunition'        => $capitalLibre,
-        'usd_exchange_rate' => app(\App\Services\BpdExchangeRateService::class)->getUsdSellRate(),
+        'budget_currency'   => $ultimoPresupuesto?->currency,
+        'usd_exchange_rate' => $ultimoPresupuesto?->currency === 'DOP' && $misDeudas->contains('currency', 'USD')
+            ? app(\App\Services\BpdExchangeRateService::class)->getUsdSellRate() : null,
         'fallen_bosses'     => $fallenBosses,
     ]);
 })->middleware(['auth', 'verified'])->name('deudas');
@@ -162,6 +104,7 @@ Route::middleware(['auth', 'throttle:30,1'])->group(function () {
     Route::post('/quick-attack', [QuickAttackController::class, 'store'])->name('quick-attack.store');
     Route::post('/quests/claim', [QuestController::class, 'claim'])->name('quests.claim');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile/financial-preferences', [ProfileController::class, 'financialPreferences'])->name('profile.financial-preferences');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

@@ -4,7 +4,8 @@ import CombatLog from '@/Components/CombatLog.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { formatMoney as fmtMoney, getSymbol } from '@/composables/useDebtUtils';
+import { useMoney } from '@/composables/useMoney';
+import { getSymbol } from '@/composables/useDebtUtils';
 
 const props = defineProps({
     budgets:         Array,
@@ -12,7 +13,7 @@ const props = defineProps({
 });
 
 // Re-export the shared formatter (keeps existing template bindings working)
-const formatMoney = (amount) => Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const { number: formatMoney, money, locale } = useMoney();
 
 /**
  * Returns the most meaningful "Max HP" figure for a defeated boss.
@@ -39,7 +40,7 @@ const getRemaining = (details) => parseDetails(details).remaining || 0;
 const getDebtPaymentsTotal = (details) => {
     const parsed = parseDetails(details);
     if (!parsed.debt_payments) return 0;
-    return parsed.debt_payments.reduce((sum, p) => sum + Number(p.amount), 0);
+    return parsed.debt_payments.reduce((sum, p) => sum + Number(p.budget_amount ?? p.amount), 0);
 };
 
 // 🛠️ LÓGICA DEL MODAL
@@ -118,7 +119,7 @@ const downloadExcel = (id) => {
                                 <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
                                 <h3 class="font-black text-base text-white mb-1 truncate">📄 {{ budget.title }}</h3>
                                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                                    Guardado: {{ new Date(budget.created_at).toLocaleDateString('es-DO') }}
+                                    Guardado: {{ new Date(budget.created_at).toLocaleDateString(locale) }}
                                 </p>
                             </div>
 
@@ -126,23 +127,23 @@ const downloadExcel = (id) => {
                             <div class="p-5 flex-grow space-y-3">
                                 <div class="flex justify-between items-center pb-3 border-b border-slate-800/60">
                                     <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Ingreso Quincenal</span>
-                                    <span class="text-white font-black font-mono text-sm">RD$ {{ formatMoney(budget.income) }}</span>
+                                    <span class="text-white font-black font-mono text-sm">{{ money(budget.income, budget.currency) }}</span>
                                 </div>
                                 <div class="flex justify-between items-center pb-3 border-b border-slate-800/60">
                                     <span class="text-slate-400 font-bold text-xs uppercase tracking-wider">Gastos Fijos</span>
-                                    <span class="text-red-400 font-black font-mono text-sm">- RD$ {{ formatMoney(budget.fixed_expenses_total) }}</span>
+                                    <span class="text-red-400 font-black font-mono text-sm">- {{ money(budget.fixed_expenses_total, budget.currency) }}</span>
                                 </div>
 
                                 <div v-if="getDebtPaymentsTotal(budget.details) > 0"
                                     class="flex justify-between items-center pb-3 border-b border-slate-800/60">
                                     <span class="text-red-400 font-black text-xs uppercase tracking-wider flex items-center gap-1">⚔️ Ataques a Deudas</span>
-                                    <span class="text-red-400 font-black font-mono text-sm">- RD$ {{ formatMoney(getDebtPaymentsTotal(budget.details)) }}</span>
+                                    <span class="text-red-400 font-black font-mono text-sm">- {{ money(getDebtPaymentsTotal(budget.details), budget.currency) }}</span>
                                 </div>
 
                                 <!-- Capital libre (highlighted row) -->
                                 <div class="flex justify-between items-center bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
                                     <span class="text-blue-400 font-black text-xs uppercase tracking-wider">💰 Capital Libre</span>
-                                    <span class="text-blue-300 font-black font-mono">RD$ {{ formatMoney(getRemaining(budget.details)) }}</span>
+                                    <span class="text-blue-300 font-black font-mono">{{ money(getRemaining(budget.details), budget.currency) }}</span>
                                 </div>
                             </div>
 
@@ -228,7 +229,7 @@ const downloadExcel = (id) => {
 
                                 <!-- Defeat date -->
                                 <p class="text-[10px] text-slate-600 font-bold mt-1.5 uppercase tracking-wider">
-                                    Derrotado: {{ new Date(boss.updated_at).toLocaleDateString('es-DO') }}
+                                    Derrotado: {{ new Date(boss.updated_at).toLocaleDateString(locale) }}
                                 </p>
                             </div>
 
@@ -265,7 +266,7 @@ const downloadExcel = (id) => {
                     <div class="bg-slate-900 px-6 py-6">
                         <div class="flex justify-between bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner">
                             <span class="text-slate-400 font-black uppercase text-xs tracking-wider">Ingreso Total:</span>
-                            <span class="text-blue-400 font-black font-mono text-lg">RD$ {{ formatMoney(selectedBudget.income) }}</span>
+                            <span class="text-blue-400 font-black font-mono text-lg">{{ money(selectedBudget.income, selectedBudget.currency) }}</span>
                         </div>
 
                         <h4 class="font-black text-slate-300 text-xs uppercase tracking-widest mb-3">📉 Suministros Consumidos:</h4>
@@ -273,7 +274,7 @@ const downloadExcel = (id) => {
                             <li v-for="item in selectedBudget.parsedDetails.fixed" :key="item.name"
                                 class="flex justify-between text-sm bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
                                 <span class="text-slate-300 font-medium">{{ item.name }}</span>
-                                <span class="text-red-400 font-black font-mono">RD$ {{ formatMoney(item.amount) }}</span>
+                                <span class="text-red-400 font-black font-mono">{{ money(item.amount, selectedBudget.currency) }}</span>
                             </li>
                         </ul>
 
@@ -283,7 +284,7 @@ const downloadExcel = (id) => {
                                 <li v-for="pago in selectedBudget.parsedDetails.debt_payments" :key="pago.name"
                                     class="flex justify-between text-sm bg-red-900/20 p-3 rounded-xl border border-red-500/20">
                                     <span class="text-red-300 font-bold">{{ pago.name }}</span>
-                                    <span class="text-red-400 font-black font-mono">- RD$ {{ formatMoney(pago.amount) }}</span>
+                                    <span class="text-red-400 font-black font-mono">- {{ money(pago.amount, pago.currency ?? selectedBudget.currency) }}</span>
                                 </li>
                             </ul>
                         </div>
@@ -291,7 +292,7 @@ const downloadExcel = (id) => {
                         <!-- Capital libre -->
                         <div class="mt-6 p-5 bg-blue-900/20 rounded-2xl flex justify-between items-center border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
                             <span class="font-black text-blue-400 uppercase text-xs tracking-wider">💰 Capital Libre Restante:</span>
-                            <span class="font-black text-white font-mono text-2xl">RD$ {{ formatMoney(selectedBudget.parsedDetails.remaining) }}</span>
+                            <span class="font-black text-white font-mono text-2xl">{{ money(selectedBudget.parsedDetails.remaining, selectedBudget.currency) }}</span>
                         </div>
                     </div>
 
